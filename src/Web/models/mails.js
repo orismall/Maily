@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 const mailSchema = new mongoose.Schema({
-  id: { type: Number, unique: true }, 
+  mailId: { type: Number, unique: true }, 
   sender: { type: String, required: true },
   receiver: { type: [String], required: true },
   subject: { type: String, required: true },
@@ -12,6 +12,6 @@ const mailSchema = new mongoose.Schema({
   type: { type: String, default: 'mail' }
 }, { _id: false }); // _id will be part of the parent document (e.g. inside User.mails)
 
-mailSchema.plugin(AutoIncrement, { inc_field: 'id' });
+mailSchema.plugin(AutoIncrement, { inc_field: 'mailId' });
 module.exports = mailSchema;
 
