@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 const mailSchema = new mongoose.Schema({
-  mailId: { type: Number, unique: true }, 
+  mailId: { type: Number}, 
   sender: { type: String, required: true },
   receiver: { type: [String], required: true },
   subject: { type: String, required: true },
