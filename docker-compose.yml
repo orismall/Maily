@@ -41,7 +41,7 @@ services:
       # Use container name for internal Docker network
       - SERVER_IP=gmail-server 
       
-      - MONGO_URI=mongodb://mongo:27017/gmail-clone
+      - MONGO_URI=mongodb://mongo:27017/MailyDB
 
   gmail-web-client:
     build:
