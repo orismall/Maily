@@ -1,0 +1,230 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  transition: background-color 1s ease, color 1s ease;
+}
+
+.login-container {
+  margin: 0;
+  padding: 0;
+  background-color: #f2f2f2;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; 
+  padding-top: 75px;       
+  height: 100vh;
+  box-sizing: border-box;
+  transition: background-color 1s ease;
+}
+
+.login-card {
+  background: white;
+  padding: 70px 70px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  margin: 0 auto;
+  transition: background-color 1s ease, box-shadow 1s ease;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+}
+
+.login-icon {
+  width: 150px;
+  height: auto;
+  margin-bottom: 46px;
+  margin-top: -30px;
+}
+
+.login-form h2 {
+  font-size: x-large;
+  font-weight: bold;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color: #202124;
+  margin: 0 0 10px;
+  text-align: center;
+  background: none;
+  transition: color 1s ease;
+}
+
+.login-input {
+  width: 75%;
+  padding: 14px 12px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: white;
+  box-sizing: border-box;
+  transition: background-color 1s ease, color 1s ease, border-color 0.8s ease;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 1px #1a73e8;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-btn {
+  width: 75%;
+  padding: 12px;
+  background-color: #1a73e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.8s ease, color 0.8s ease;
+  text-align: center;
+  margin-top: 15px;
+}
+
+.login-btn:hover {
+  background-color: #1669c1;
+}
+
+.login-btn:disabled {
+  background-color: #a5c6f1;
+  cursor: not-allowed;
+}
+
+.login-error {
+  color: #d93025;
+  font-size: 13px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  transition: color 0.8s ease;
+}
+
+.login-signup-link {
+  margin-top: 24px;
+  font-size: 1rem;
+  color: #3c4043;
+  transition: color 0.8s ease;
+}
+
+.login-signup-link a {
+  color: #1a73e8;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.8s ease;
+}
+
+.login-signup-link a:hover {
+  text-decoration: underline;
+  color: #174ea6;
+}
+
+.login-input::placeholder {
+  color: #202124; 
+}
+
+
+.login-input:-ms-input-placeholder {
+  color: #202124;
+}
+
+.login-input::-ms-input-placeholder {
+  color: #202124;
+}
+
+.login-input::-webkit-input-placeholder {
+  color: #202124;
+}
+
+.login-input::-moz-placeholder {
+  color: #202124;
+}
+
+.login-input:-moz-placeholder {
+  color: #202124;
+}
+
+
+.dark .login-container {
+  background: #121212;
+}
+
+.dark .login-card {
+  background: #1e1e1e;
+  box-shadow: 0 0px 4px rgb(255, 255, 255);
+}
+
+.dark .login-form h2 {
+  color: #ffffff;
+}
+
+.dark .login-input {
+  background-color: #2c2c2c;
+  color: #e8eaed;
+  border: 1px solid #5f6368;
+}
+
+.dark .login-input:focus {
+  border-color: #444444;
+  box-shadow: 0 0 0 1px #444444;
+}
+
+.dark .login-btn {
+  background-color: #4285f4;
+  color: #ffffff;
+}
+
+.dark .login-btn:hover {
+  background-color: #357ae8;
+}
+
+.dark .login-btn:disabled {
+  background-color: #6a9efc;
+}
+
+.dark .login-error {
+  color: #ff6b6b;
+}
+
+.dark .login-signup-link {
+  color: #9aa0a6;
+}
+
+.dark .login-signup-link a {
+  color: #8ab4f8;
+}
+
+.dark .login-input::placeholder {
+  color: #ffffff;
+  opacity: 1;
+}
+
+.dark .login-input:-ms-input-placeholder {
+  color: #ffffff;
+}
+
+.dark .login-input::-ms-input-placeholder {
+  color: #ffffff;
+}
+
+.dark .login-input::-webkit-input-placeholder {
+  color: #ffffff;
+}
+
+.dark .login-input::-moz-placeholder {
+  color: #ffffff;
+}
+
+.dark .login-input:-moz-placeholder {
+  color: #ffffff;
+}

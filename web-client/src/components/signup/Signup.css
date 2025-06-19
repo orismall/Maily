@@ -1,0 +1,294 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    transition: background-color 1s ease, color 1s ease;
+}
+
+.signup-container {
+  margin: 0;
+  padding: 0;
+  background-color: #f2f2f2;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  box-sizing: border-box;
+  transition: background-color 1s ease;
+}
+
+.signup-card {
+  background: white;
+  padding: 10px 70px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  margin: 0 auto;
+  transition: background-color 1s ease, box-shadow 1s ease;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.signup-input::placeholder {
+  color: #202124;
+  opacity: 1;
+}
+
+.signup-input:-ms-input-placeholder {
+  color: #202124;
+}
+
+.signup-input::-ms-input-placeholder {
+  color: #202124;
+}
+
+.signup-input::-webkit-input-placeholder {
+  color: #202124;
+}
+
+.signup-input::-moz-placeholder {
+  color: #202124;
+}
+
+.signup-input:-moz-placeholder {
+  color: #202124;
+}
+
+.signup-icon {
+  width: 150px;
+  height: auto;
+  margin-bottom: 16px;
+}
+
+.dark .signup-icon {
+  width: 150px;
+  height: auto;
+  margin-bottom: 16px;
+}
+
+.signup-form h2 {
+  font-size: 22px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  width: 400px;
+  height: auto;
+  font-size: x-large;
+  font-weight: bold;
+  color: #202124;
+  margin: 0 0 10px;
+  text-align: center;
+  align-items: center;
+  margin-bottom: 10px;
+  margin-top: -10px;
+  background: none;
+  transition: color 1s ease;
+}
+
+.signup-form p {
+  font-size: 14px;
+  color: #5f6368;
+  margin: 12px 0px 28px;
+  align-items: center;
+}
+
+.signup-input {
+  width: 75%;
+  padding: 14px 12px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: white;
+  box-sizing: border-box;
+  transition: background-color 1s ease, color 1s ease, border-color 0.8s ease;
+}
+
+.signup-input:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 1px #1a73e8;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+select.signup-input {
+  appearance: none;
+  background-color: white;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23333' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 18px center;
+  background-size: 8px 10px;
+}
+
+.dark input[type="file"]::file-selector-button {
+  background-color: #535353;
+  color: #ffffff;
+  border: 1px solid #797878;
+}
+
+.avatar-preview {
+  width: 80px;
+  height: 80px;
+  display: block;
+  margin: 10px auto;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ccc;
+}
+
+.signup-error {
+  color: #d93025;
+  font-size: 13px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  transition: color 0.8s ease;
+}
+
+.signup-btn {
+  width: 75%;
+  padding: 12px;
+  background-color: #1a73e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.8s ease, color 0.8s ease;
+  text-align: center;
+  margin-top: 15px;
+}
+
+.signup-btn:hover {
+  background-color: #1669c1;
+}
+
+.signup-btn:disabled {
+  background-color: #a5c6f1;
+  cursor: not-allowed;
+}
+
+@media (max-width: 500px) {
+  .signup-card {
+    width: 90%;
+    padding: 24px;
+  }
+
+  .signup-input {
+    font-size: 13px;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .signup-btn {
+    font-size: 13px;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+.dark .signup-container {
+  margin: 0;
+  padding: 0;
+  background-color: #121212;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.dark .signup-card {
+  background-color: #1e1e1e;
+  box-shadow: 0 0px 4px rgb(255, 255, 255);
+}
+
+.dark .signup-form h2 {
+  color: #ffffff;
+}
+
+.dark .signup-form p {
+  color: #aaaaaa;
+}
+
+.dark .signup-input {
+  background-color: #2c2c2c;
+  color: #ffffff;
+  border: 1px solid #5f6368;
+}
+
+.dark .signup-input::placeholder {
+  color: #ffffff;
+}
+
+.dark .signup-btn {
+  background-color: #4285f4;
+  color: #ffffff;
+}
+
+.dark .signup-btn:hover {
+  background-color: #357ae8;
+}
+
+.dark .signup-btn:disabled {
+  background-color: #6a9efc;
+}
+
+.dark .avatar-preview {
+  border: 1px solid #666;
+}
+
+.dark .signup-error {
+  color: #ff6b6b;
+}
+
+.dark select.signup-input {
+  background-color: #2c2c2c;
+  color: #ffffff;
+  border: 1px solid #444;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath fill='%23000000' d='M6 7L0 0h12L6 7z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 18px center;
+  background-size: 8px 10px;
+}
+
+.dark .signup-input:focus {
+  border-color: #444444;
+  box-shadow: 0 0 0 1px #444444;
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+}
+
+.signup-login-link {
+  margin-top: 24px;
+  font-size: 1rem;
+  color: #3c4043;
+  transition: color 0.8s ease;
+}
+
+.signup-login-link a {
+  color: #1a73e8;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.8s ease;
+}
+
+.signup-login-link a:hover {
+  text-decoration: underline;
+  color: #174ea6;
+}
+
+.dark .signup-login-link {
+  color: #9aa0a6;
+}
+
+.dark .signup-login-link a {
+  color: #8ab4f8;
+}

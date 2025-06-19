@@ -1,0 +1,20 @@
+FROM node:18
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY src/Web/package*.json ./
+WORKDIR /app/Web
+
+# Install dependencies
+RUN npm install
+
+# Install async-mutex 
+RUN npm install async-mutex
+
+# Copy the rest of the source code
+COPY src/Web/ .
+
+# Run the app
+CMD ["node", "app.js"]

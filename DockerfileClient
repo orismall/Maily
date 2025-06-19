@@ -1,0 +1,8 @@
+FROM python:3
+
+# Copy into /usr
+COPY . /usr
+
+WORKDIR /usr
+
+ENTRYPOINT ["python", "./src/Main/ClientSocket.py"]
