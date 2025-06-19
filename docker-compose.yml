@@ -57,6 +57,16 @@ services:
     depends_on:
       - gmail-web
 
+  mongo:
+    image: mongo:6
+    container_name: gmail-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
 # Define named volumes
 volumes:
   data:
+  mongo-data:

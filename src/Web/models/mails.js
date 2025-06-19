@@ -1,49 +1,17 @@
-const Label = require('./labels');
+const mongoose = require('mongoose');
+const AutoIncrement = require('mongoose-sequence')(mongoose);
 
+const mailSchema = new mongoose.Schema({
+  id: { type: Number, unique: true }, 
+  sender: { type: String, required: true },
+  receiver: { type: [String], required: true },
+  subject: { type: String, required: true },
+  content: { type: String, required: true },
+  date: { type: Date, default: Date.now },
+  labels: { type: [Number], default: [] }, // Label IDs
+  type: { type: String, default: 'mail' }
+}, { _id: false }); // _id will be part of the parent document (e.g. inside User.mails)
 
-// mailID tracking
-let mailId = 0;
+mailSchema.plugin(AutoIncrement, { inc_field: 'id' });
+module.exports = mailSchema;
 
-class Mail {
-  constructor(sender, receivers, subject, content, labels = []) {
-    this.id = ++mailId;
-    this.sender = sender;
-    this.receiver = receivers;
-    this.subject = subject;
-    this.content = content;
-    this.date = new Date();
-    this.labels = labels;
-    this.type = 'mail';
-  }
-}
-
-function addLabelToMail(mail, labelId) {
-  if (!mail.labels.includes(labelId)) {
-    mail.labels.push(labelId);
-    const label = Label.getLabelById(labelId);
-    if (label && !label.mailIds.includes(mail.id)) {
-      label.mailIds.push(mail.id);
-    }
-  }
-}
-
-function removeLabelFromMail(mail, labelId) {
-  const labelIndex = mail.labels.indexOf(labelId);
-  if (labelIndex !== -1) {
-    mail.labels.splice(labelIndex, 1);
-  }
-  const label = Label.getLabelById(labelId);
-  if (label) {
-    const mailIndex = label.mailIds.indexOf(mail.id);
-    if (mailIndex !== -1) {
-      label.mailIds.splice(mailIndex, 1);
-    }
-  }
-}
-
-
-module.exports = {
-  Mail,
-  addLabelToMail,
-  removeLabelFromMail
-};
