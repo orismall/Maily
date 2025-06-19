@@ -1,0 +1,12 @@
+FROM node:18
+
+WORKDIR /usr
+
+COPY web-client/package*.json ./
+RUN npm install 
+
+COPY web-client/ ./
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

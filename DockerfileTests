@@ -1,0 +1,19 @@
+FROM gcc:latest
+
+RUN apt-get update && apt-get install -y cmake libgtest-dev
+
+# Copy into /usr
+COPY . /usr
+
+# Create build directory and switch to it
+WORKDIR /usr/src/build
+
+# Run cmake for Tests only
+RUN cmake /usr -DBUILD_TESTS=ON && make
+
+# Set working directory to where the executable is
+WORKDIR /usr/src/build
+
+# CMD should run the executable from /Tests
+CMD ["./Tests"] 
+

@@ -1,0 +1,62 @@
+services:
+  gmail-server:
+    # Build the server from the DockerfileServer Dockerfile
+    build:
+      context: .
+      dockerfile: DockerfileServer
+    # Name of the image 
+    image: gmail-server-image
+    # Name of the container
+    container_name: gmail-server
+    # Map host port to container port
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    # Set environment variables for the server
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
+      - BITS_ARRAY_SIZE=${BITS_ARRAY_SIZE}
+      - HASH_FUNCS=${HASH_FUNCS}
+    # Run the server with the appropriate arguments
+    command: ["./Main", "${SERVER_PORT}", "${BITS_ARRAY_SIZE}", "${HASH_FUNCS}"]
+    # Mount the volume to persist data
+    volumes:
+      - data:/usr/data
+
+  gmail-web:
+    # Build the web client from the DockerfileWeb Dockerfile
+    build:
+      context: .
+      dockerfile: DockerfileWeb
+    # Name of the image 
+    image: gmail-web-image
+    # Name of the container
+    container_name: gmail-web
+    # Map host port to container port
+    ports:
+      - "${WEB_PORT}:${WEB_PORT}"
+    # Set environment variables for the web app
+    environment:
+      - PORT=${WEB_PORT}
+      - SERVER_PORT=${SERVER_PORT}
+      # Use container name for internal Docker network
+      - SERVER_IP=gmail-server 
+
+  gmail-web-client:
+    build:
+      context: .
+      dockerfile: DockerfileReact
+    container_name: gmail-web-client
+    ports:
+      - "${WEB_CLIENT_PORT}:${WEB_CLIENT_PORT}"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_HOST=localhost
+      - WDS_SOCKET_PORT=${WEB_CLIENT_PORT}
+    stdin_open: true
+    tty: true
+    depends_on:
+      - gmail-web
+
+# Define named volumes
+volumes:
+  data:
