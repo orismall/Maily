@@ -43,7 +43,7 @@ const Inbox = () => {
         }
       });
       const data = await res.json();
-      setLabels(Array.isArray(data) ? data : []);
+      setLabels(Array.isArray(data) ? [...data] : []);
     } catch (err) {
       console.error("Failed to fetch labels", err);
     }

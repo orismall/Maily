@@ -12,6 +12,13 @@ const spamRouter = require('./routes/spam');
 const mongoose = require('mongoose');
 
 require('dotenv').config();
+mongoose.connect(process.env.MONGO_URI,
+    {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    });
+/*
+require('dotenv').config();
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -20,6 +27,9 @@ mongoose.connect(process.env.MONGO_URI, {
 }).catch((err) => {
   console.error('MongoDB connection error:', err);
 });
+*/
+
+
 
 app.use(cors());
 
@@ -57,4 +67,5 @@ const PORT = process.env.PORT;
 // JSON formatting
 app.set('json spaces', 2);
 // Start the server and listen on the specified port
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+//app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(process.env.PORT);
