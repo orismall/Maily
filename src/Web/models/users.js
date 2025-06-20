@@ -13,11 +13,11 @@ const userSchema = new mongoose.Schema({
     birthdate: {type: Date, required: true},
     avatar: {type: String, required: true},
     mails: {
-        inbox: {type: [mailSchema], default: [] },
-        sent: {type: [mailSchema], default: [] },
-        drafts: {type: [mailSchema], default: [] },
-        trash: {type: [mailSchema], default: [] },
-        spam: {type: [mailSchema], default: [] }
+        inbox: [{ mail: mailSchema, isRead: Boolean, isStarred: Boolean }],
+        sent: [{ mail: mailSchema, isRead: Boolean, isStarred: Boolean }],
+        trash: [{ mail: mailSchema, isRead: Boolean, isStarred: Boolean }],
+        spam: [{ mail: mailSchema, isRead: Boolean, isStarred: Boolean }],
+        drafts: [{ mail: mailSchema, isRead: Boolean, isStarred: Boolean }],
     }
 });
 

@@ -5,12 +5,12 @@ const mailSchema = new mongoose.Schema({
   mailId: { type: Number}, 
   sender: { type: String, required: true },
   receiver: { type: [String], required: true },
-  subject: { type: String, required: true },
-  content: { type: String, required: true },
+  subject: { type: String, required: false, default: '(No subject)' },
+  content: { type: String, required: false, default: '' },
   date: { type: Date, default: Date.now },
   labels: { type: [Number], default: [] }, // Label IDs
   type: { type: String, default: 'mail' }
-}, { _id: false }); // _id will be part of the parent document (e.g. inside User.mails)
+});
 
 mailSchema.plugin(AutoIncrement, { inc_field: 'mailId' });
 module.exports = mailSchema;

@@ -26,7 +26,7 @@ const MailList = ({
     <div className={`mail-list ${collapsed ? 'collapsed' : ''}`}>
       {mails.map(item => (
         <MailItem
-          key={item.mail.id}
+          key={item.mail.mailId}
           mail={item}
           onToggleRead={onToggleRead}
           onToggleStar={onToggleStar}

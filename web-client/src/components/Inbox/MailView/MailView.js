@@ -208,7 +208,7 @@ const MailView = ({
   // Add/remove label from mail
   const toggleLabel = async (labelId) => {
     const hasLabel = attachedLabels.includes(labelId);
-    const url = `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/${mail.id}/labels/${labelId}`;
+    const url = `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/${mail.mailId}/labels/${labelId}`;
     const method = hasLabel ? 'DELETE' : 'POST';
 
     try {
@@ -229,6 +229,7 @@ const MailView = ({
       console.error(err);
     }
   };
+console.log("MailView mailId", mail.mailId);
 
   return (
     <div className="mail-view">
@@ -282,22 +283,22 @@ const MailView = ({
 
         <div className="right-buttons">
           {currentFolder === 'spam' ? (
-            <button className="mail-action-button spam-button" onClick={() => onMarkAsNotSpam(mail.id)}>
+            <button className="mail-action-button spam-button" onClick={() => onMarkAsNotSpam(mail.mailId)}>
               <MdReportGmailerrorred style={{ marginRight: '4px' }} />
               Not Spam
             </button>
           ) : currentFolder === 'trash' ? (
-            <button className="mail-action-button restore-button" onClick={() => handleRestore(mail.id)}>
+            <button className="mail-action-button restore-button" onClick={() => handleRestore(mail.mailId)}>
               Restore
             </button>
           ) : (
-            <button className="mail-action-button spam-button" onClick={() => onMarkAsSpam(mail.id)}>
+            <button className="mail-action-button spam-button" onClick={() => onMarkAsSpam(mail.mailId)}>
               <MdReportGmailerrorred style={{ marginRight: '4px' }} />
               Mark as Spam
             </button>
           )}
 
-          <button className="delete-button" onClick={() => handleDelete(mail.id, currentFolder)}>
+          <button className="delete-button"onClick={() => handleDelete(mail.mailId, currentFolder)}>
             <FaTrash style={{ marginRight: '4px' }} />
             {currentFolder === 'trash' || currentFolder === 'spam' ? 'Delete Permanently' : 'Move to Trash'}
           </button>

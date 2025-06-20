@@ -1,115 +1,82 @@
-const User = require('../models/users');
-const Draft = require('../models/drafts');
-const { sendMail } = require('./mails');
+const mailService = require('../services/mailService');
 const isLoggedIn = require('../utils/isLoggedIn');
-const TrashMail = require('../models/trash');
+const { sendMail } = require('./mails');
 
-
-// POST /api/drafts - Create a new draft
-function createDraft(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
+async function createDraft(req, res) {
+  await isLoggedIn(req, res, async () => {
     const { receiver, subject, content } = req.body;
-    // Do not save an empty draft
-    if (!receiver && !subject && !content) {
-      return res.status(400).json({ error: "Cannot create an empty draft" });
-    }
-    const newDraft = new Draft(
-      user.email,
-      receiver || '',
-      subject || "(No subject)",
-      content || ''
-    );
-    newDraft.date = new Date();
-    user.drafts.unshift({ mail: newDraft, isRead: true, isStarred: false });
-    res.status(201).location(`/api/drafts/${newDraft.id}`).end();
-  });
-};
+    if (!receiver && !subject && !content)
+      return res.status(400).json({ error: 'Cannot create an empty draft' });
 
-async function sendDraftAsMail(req, res) {
-  isLoggedIn(req, res, async () => {
-    const user = req.user;
-    const draftId = Number(req.params.id);
-    const draftIndex = user.drafts.findIndex(d => d.mail.id === draftId);
-    if (draftIndex === -1) return res.status(404).json({ error: "Draft not found" });
-    const draft = user.drafts[draftIndex].mail;
-    // Simulate request body like a normal mail
-    req.body = {
-      receiver: draft.receiver,
-      subject: draft.subject || "(No subject)",
-      content: draft.content || ""
+    const mail = {
+      sender: req.user.email,
+      receiver: receiver || '',
+      subject: subject || '(No subject)',
+      content: content || '',
+      type: 'draft',
+      labels: [],
     };
-    await sendMail(req, res);
-    // If sent successfully, delete the draft
-    if (res.statusCode === 201) { ////////////////////////////////////////////////////////
-      user.drafts.splice(draftIndex, 1);
+
+    const success = await mailService.createDraft(req.user.userId, mail);
+    if (success) {
+      res.status(201).location('/api/drafts').end();
+    } else {
+      res.status(500).json({ error: 'Failed to save draft' });
     }
-  });
-};
-
-// GET /api/drafts - Get all drafts of the authenticated user
-function getDrafts(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const sorted = [...user.drafts].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const page = parseInt(req.query.page) || 1;
-    const PAGE_SIZE = 50;
-    const start = (page - 1) * PAGE_SIZE;
-    const paginated = sorted.slice(start, start + PAGE_SIZE);
-    res.json(paginated);
-
-  });
-};
-
-// GET /api/drafts/:id - Get a specific draft
-function getDraftById(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const draftId = Number(req.params.id);
-    const item  = user.drafts.find(d => d.mail.id === draftId);
-    if (!item ) return res.status(404).json({ error: "Draft not found" });
-    res.json(item);
-  });
-};
-
-// PATCH /api/drafts/:id - Update a draft
-function updateDraft(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const draftId = Number(req.params.id);
-    const item  = user.drafts.find(d => d.mail.id === draftId);
-    if (!item ) return res.status(404).json({ error: "Draft not found" });
-    const draft = item.mail;
-    const { receiver, subject, content, isStarred } = req.body;
-    if (receiver !== undefined) draft.receiver = receiver;
-    if (subject !== undefined) draft.subject = subject;
-    if (content !== undefined) draft.content = content;
-    if (isStarred !== undefined) item.isStarred = isStarred
-    draft.date = new Date(); 
-    res.status(204).end();
-  });
-};
-
-// DELETE /api/drafts/:id - Permanently delete a draft
-function deleteDraft(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const draftId = Number(req.params.id);
-    const index = user.drafts.findIndex(d => d.mail.id === draftId);
-    if (index === -1) {
-      return res.status(404).json({ error: "Draft not found" });
-    }
-    user.drafts.splice(index, 1);
-    res.status(204).end();
   });
 }
 
-// Export all controller functions
+async function getDrafts(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const drafts = await mailService.getDrafts(req.user.userId);
+    const sorted = [...drafts].sort((a, b) => new Date(b.mail.date) - new Date(a.mail.date));
+    const page = +req.query.page || 1;
+    res.json(sorted.slice((page - 1) * 50, page * 50));
+  });
+}
+
+async function getDraftById(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const draft = await mailService.getDraftById(req.user.userId, +req.params.id);
+    if (!draft) return res.status(404).json({ error: 'Draft not found' });
+    res.json(draft);
+  });
+}
+
+async function updateDraft(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const success = await mailService.updateDraft(req.user.userId, +req.params.id, req.body);
+    res.status(success ? 204 : 404).end();
+  });
+}
+
+async function deleteDraft(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const success = await mailService.deleteDraft(req.user.userId, +req.params.id);
+    res.status(success ? 204 : 404).end();
+  });
+}
+
+async function sendDraftAsMail(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const mail = await mailService.sendDraftAsMail(req.user.userId, +req.params.id);
+    if (!mail) return res.status(404).json({ error: 'Draft not found' });
+
+    // Set req.body for sendMail controller
+    req.body = {
+      receiver: mail.receiver,
+      subject: mail.subject,
+      content: mail.content
+    };
+    await sendMail(req, res);
+  });
+}
+
 module.exports = {
   createDraft,
-  sendDraftAsMail,
   getDrafts,
   getDraftById,
   updateDraft,
-  deleteDraft
+  deleteDraft,
+  sendDraftAsMail
 };

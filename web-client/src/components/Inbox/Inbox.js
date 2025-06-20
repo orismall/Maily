@@ -152,7 +152,7 @@ const Inbox = () => {
 
       setMails(prev =>
         prev.map(mail =>
-          mail.mail.id === mailId
+          mail.mailId === mailId
             ? { ...mail, isRead: newValue }
             : mail
         )
@@ -249,7 +249,7 @@ const Inbox = () => {
   // Toggle star (favorite) for a mail
   const handleToggleStar = async (mailId, mailType) => {
     const session = JSON.parse(localStorage.getItem('session'));
-    const targetMail = mails.find(m => m.mail.id === mailId && m.mail.type === mailType);
+    const targetMail = mails.find(m => m.mail.mailId === mailId && m.mail.type === mailType);
     if (!targetMail) return;
 
     const newStarValue = !targetMail.isStarred;
@@ -280,7 +280,7 @@ const Inbox = () => {
       } else {
         setMails(prev =>
           prev.map(mail =>
-            mail.mail.id === mailId && mail.mail.type === mailType
+            mail.mailId === mailId && mail.mail.type === mailType
               ? { ...mail, isStarred: newStarValue }
               : mail
           )
@@ -307,7 +307,7 @@ const Inbox = () => {
 
       // Filter only mails that have the specified label
       const filtered = all.filter(item =>
-        item.mail.labels?.includes(labelId)
+        item.mail.labels?.includes(labelId) && currentFolder !== 'trash'
       );
 
       setMails(filtered);
@@ -336,7 +336,7 @@ const Inbox = () => {
       });
 
       // Remove the mail from current view
-      setMails(prev => prev.filter(m => m.mail.id !== mailId));
+      setMails(prev => prev.filter(m => m.mailId !== mailId));
       if (selectedMail?.id === mailId) setSelectedMail(null);
     } catch (err) {
       console.error("Error marking as spam:", err);
@@ -359,7 +359,7 @@ const Inbox = () => {
       });
 
       // Remove mail from spam list
-      setMails(prev => prev.filter(m => m.mail.id !== mailId));
+      setMails(prev => prev.filter(m => m.mailId !== mailId));
       setSelectedMail(null);
     } catch (err) {
       console.error("Error unmarking spam:", err);
