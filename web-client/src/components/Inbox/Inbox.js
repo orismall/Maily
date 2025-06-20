@@ -166,7 +166,9 @@ const Inbox = () => {
   const handleOpenMail = (mailData) => {
     if (mailData.type === 'draft') {
       setComposeValues({
-        receiver: mailData.receiver || "",
+        receiver: Array.isArray(mailData.receiver)
+        ? mailData.receiver.join(', ')
+        : (mailData.receiver || ""),
         subject: mailData.subject || "",
         content: mailData.content || "",
         id: mailData._id || null
@@ -360,9 +362,10 @@ const Inbox = () => {
 
     const restored = await res.json();
 
-    // Remove from current mails (spam)
-    setMails(prev => prev.filter(m => m._id !== mailId));
-
+    if (currentFolder === 'spam') {
+      // Remove it from spam view
+      setMails(prev => prev.filter(m => m._id !== mailId));
+    }
     // If currentFolder is not spam, also insert it if relevant
     if (currentFolder === 'inbox' || currentFolder === 'sent') {
       setMails(prev => [restored, ...prev]);
@@ -391,13 +394,17 @@ const Inbox = () => {
           : currentFolder === 'spam'
             ? `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/spam/${mailId}`
             : currentFolder === 'drafts'
+            
               ? `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/drafts/${mailId}`
               : `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/${mailId}`;
 
+      console.log("Deleting from URL:", url);
       const res = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.token}`,
+          'user-id': session._id,
+          'Content-Type': 'application/json'
         }
       });
 

@@ -391,5 +391,6 @@ module.exports = {
   getDraftById,
   updateDraft,
   sendDraftAsMail,
-  deleteMailDocument
+  deleteMailDocument,
+  deleteDraft
 };
