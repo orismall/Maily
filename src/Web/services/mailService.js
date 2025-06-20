@@ -259,6 +259,8 @@ async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
   const isReceiver = mail.receiver.includes(user.email);
   const entry = { mail, isRead, isStarred };
 
+  const mailObjectId = new mongoose.Types.ObjectId(mailId);
+
   const updates = { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } };
 
   if (isSender && isReceiver) {
@@ -275,6 +277,7 @@ async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
   await User.updateOne({ _id: userId }, updates);
   return true;
 }
+
 
 async function restoreFromSpam(userId, mailId) {
   const user = await findUserById(userId);

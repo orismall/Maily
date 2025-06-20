@@ -351,31 +351,38 @@ const Inbox = () => {
     try {
       const session = JSON.parse(localStorage.getItem('session'));
       const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/spam/${mailId}/mark-as-not-spam`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.token}`
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.token}`
+        }
+      });
+
+      if (!res.ok) throw new Error("Failed to unmark spam");
+
+      const restored = await res.json();
+
+      // Remove from spam view immediately
+      if (currentFolder === 'spam') {
+        setMails(prev => prev.filter(m => m._id !== mailId));
       }
-    });
 
-    if (!res.ok) throw new Error("Failed to unmark spam");
+      // Also re-fetch the spam folder (handles pagination or edge cases)
+      if (currentFolder === 'spam') {
+        await fetchMails();
+      }
 
-    const restored = await res.json();
+      // If currently viewing inbox or sent, insert the mail
+      if (currentFolder === 'inbox' || currentFolder === 'sent') {
+        setMails(prev => [restored, ...prev]);
+      }
 
-    if (currentFolder === 'spam') {
-      // Remove it from spam view
-      setMails(prev => prev.filter(m => m._id !== mailId));
-    }
-    // If currentFolder is not spam, also insert it if relevant
-    if (currentFolder === 'inbox' || currentFolder === 'sent') {
-      setMails(prev => [restored, ...prev]);
-    }
-
-    setSelectedMail(null);
+      setSelectedMail(null);
     } catch (err) {
       console.error("Error unmarking spam:", err);
     }
   };
+
 
   // Delete a mail or move it to trash depending on folder
   const handleDelete = async (mailId, currentFolder) => {
