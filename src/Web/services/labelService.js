@@ -1,28 +1,38 @@
 const Label = require('../models/labels');
 
-async function createLabel(userId, name, color) {
-  const label = new Label({ userId, name, color });
+// Create a new label associated with a user
+async function createLabel(userObjectId, name, color) {
+  const label = new Label({ user: userObjectId, name, color });
   return await label.save();
 }
 
-async function findLabelByName(name, userId) {
-  return await Label.findOne({ name, userId });
+// Find label by name and user
+async function findLabelByName(name, userObjectId) {
+  return await Label.findOne({ name, user: userObjectId });
 }
 
-async function findLabelById(id, userId) {
-  return await Label.findOne({ id, userId });
+// Find label by _id and user
+async function findLabelById(labelId, userObjectId) {
+  return await Label.findOne({ _id: labelId, user: userObjectId });
 }
 
-async function updateLabelById(id, userId, updates) {
-  return await Label.findOneAndUpdate({ id, userId }, { $set: updates }, { new: true });
+// Update label by _id and user
+async function updateLabelById(labelId, userObjectId, updates) {
+  return await Label.findOneAndUpdate(
+    { _id: labelId, user: userObjectId },
+    { $set: updates },
+    { new: true }
+  );
 }
 
-async function deleteLabelById(id, userId) {
-  return await Label.findOneAndDelete({ id, userId });
+// Delete label by _id and user
+async function deleteLabelById(labelId, userObjectId) {
+  return await Label.findOneAndDelete({ _id: labelId, user: userObjectId });
 }
 
-async function getAllLabels(userId) {
-  return await Label.find({ userId });
+// Get all labels for a specific user
+async function getAllLabels(userObjectId) {
+  return await Label.find({ user: userObjectId });
 }
 
 module.exports = {

@@ -13,7 +13,7 @@ const isLoggedIn = async (req, res, next) => {
 
   try {
     const decoded = tokenService.verifyToken(token);
-    const user = await User.findOne({ userId: decoded.userId });
+    const user = await User.findById(decoded.userId);
 
     if (!user) return res.status(401).json({ error: "Invalid user" });
 

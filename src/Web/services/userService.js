@@ -12,7 +12,7 @@ async function createUser(data) {
 
 // Find user by userId
 async function findUserById(userId) {
-  return await User.findOne({ userId }).lean();
+  return await User.findById(userId).lean();
 }
 
 module.exports = {

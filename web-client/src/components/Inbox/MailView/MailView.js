@@ -208,7 +208,7 @@ const MailView = ({
   // Add/remove label from mail
   const toggleLabel = async (labelId) => {
     const hasLabel = attachedLabels.includes(labelId);
-    const url = `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/${mail.mailId}/labels/${labelId}`;
+    const url = `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/${mail._id}/labels/${labelId}`;
     const method = hasLabel ? 'DELETE' : 'POST';
 
     try {
@@ -229,7 +229,7 @@ const MailView = ({
       console.error(err);
     }
   };
-console.log("MailView mailId", mail.mailId);
+console.log("MailView mailId", mail._id);
 
   return (
     <div className="mail-view">
@@ -244,12 +244,12 @@ console.log("MailView mailId", mail.mailId);
             {showDropdown && (
               <div className="label-dropdown">
                 {labelList.map(label => {
-                  const isActive = attachedLabels.includes(label.id);
+                  const isActive = attachedLabels.includes(label._id);
                   return (
                     <div
-                      key={label.id}
+                      key={label._id}
                       className={`label-option ${isActive ? 'selected' : ''}`}
-                      onClick={() => toggleLabel(label.id)}
+                      onClick={() => toggleLabel(label._id)}
                     >
                       <span className="label-color-circle" style={{ backgroundColor: label.color }}></span>
                       {label.name}
@@ -283,22 +283,22 @@ console.log("MailView mailId", mail.mailId);
 
         <div className="right-buttons">
           {currentFolder === 'spam' ? (
-            <button className="mail-action-button spam-button" onClick={() => onMarkAsNotSpam(mail.mailId)}>
+            <button className="mail-action-button spam-button" onClick={() => onMarkAsNotSpam(mail._id)}>
               <MdReportGmailerrorred style={{ marginRight: '4px' }} />
               Not Spam
             </button>
           ) : currentFolder === 'trash' ? (
-            <button className="mail-action-button restore-button" onClick={() => handleRestore(mail.mailId)}>
+            <button className="mail-action-button restore-button" onClick={() => handleRestore(mail._id)}>
               Restore
             </button>
           ) : (
-            <button className="mail-action-button spam-button" onClick={() => onMarkAsSpam(mail.mailId)}>
+            <button className="mail-action-button spam-button" onClick={() => onMarkAsSpam(mail._id)}>
               <MdReportGmailerrorred style={{ marginRight: '4px' }} />
               Mark as Spam
             </button>
           )}
 
-          <button className="delete-button"onClick={() => handleDelete(mail.mailId, currentFolder)}>
+          <button className="delete-button"onClick={() => handleDelete(mail._id, currentFolder)}>
             <FaTrash style={{ marginRight: '4px' }} />
             {currentFolder === 'trash' || currentFolder === 'spam' ? 'Delete Permanently' : 'Move to Trash'}
           </button>

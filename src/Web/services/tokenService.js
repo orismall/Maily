@@ -1,8 +1,8 @@
 // services/tokenService.js
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secretkey'; // move this to .env ideally
-const JWT_EXPIRES_IN = '1h';
+const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
+const JWT_EXPIRES_IN = '2h';
 
 // Create a token for a given user ID
 function generateToken(userId) {

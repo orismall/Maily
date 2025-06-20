@@ -106,7 +106,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
 
   // Start editing an existing label
   const handleEditClick = (label) => {
-    setEditingLabelId(label.id);
+    setEditingLabelId(label._id);
     setEditedLabelName(label.name);
     setEditedColor(label.color);
     setShowInput(false);
@@ -173,7 +173,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
       });
 
       if (res.status === 204) {
-        setLabels(labels.filter(label => label.id !== labelId));
+        setLabels(labels.filter(label => label._id !== labelId));
       } else {
         const data = await res.json();
         alert(data.error);
@@ -218,10 +218,10 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
         {labels.map((label, index) => (
           <li
             key={index}
-            className={`label-item ${selectedFolder === `label-${label.id}` ? 'active' : ''}`}
+            className={`label-item ${selectedFolder === `label-${label._id}` ? 'active' : ''}`}
             title={label.name}
           >
-            {editingLabelId === label.id ? (
+            {editingLabelId === label._id ? (
               <form onSubmit={handleEditSubmit} className="label-edit-form">
                 <div className="label-input-row">
                   <input
@@ -255,7 +255,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
                 <span className="label-color-circle" style={{ backgroundColor: label.color }}></span>
                 <span
                   className="label-name"
-                  onClick={() => onLabelClick(label.id)}
+                  onClick={() => onLabelClick(label._id)}
                   style={{ cursor: 'pointer' }}
                 >
                   {collapsed ? label.name.charAt(0).toUpperCase() : label.name}
@@ -263,7 +263,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
                 {!collapsed && (
                   <div className="label-actions">
                     <button className="label-edit-btn" title="Edit label" onClick={() => handleEditClick(label)}>✏</button>
-                    <button className="label-delete-btn" title="Delete label" onClick={() => handleDeleteLabel(label.id)}>🗑</button>
+                    <button className="label-delete-btn" title="Delete label" onClick={() => handleDeleteLabel(label._id)}>🗑</button>
                   </div>
                 )}
               </>

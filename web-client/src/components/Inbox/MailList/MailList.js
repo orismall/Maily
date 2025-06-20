@@ -4,17 +4,17 @@ import './MailList.css';
 
 // Displays a list of emails by rendering MailItem components
 const MailList = ({
-  mails,                
-  onToggleRead,         
-  onToggleStar,        
-  onOpenMail,           
-  collapsed,            
-  searchTerm,           
-  onMarkAsSpam,         
-  onMarkAsNotSpam,      
-  currentFolder,        
-  handleDelete,         
-  handleRestore         
+  mails,
+  onToggleRead,
+  onToggleStar,
+  onOpenMail,
+  collapsed,
+  searchTerm,
+  onMarkAsSpam,
+  onMarkAsNotSpam,
+  currentFolder,
+  handleDelete,
+  handleRestore
 }) => {
   // Show message when there are no mails to display
   if (!mails || mails.length === 0) {
@@ -26,7 +26,7 @@ const MailList = ({
     <div className={`mail-list ${collapsed ? 'collapsed' : ''}`}>
       {mails.map(item => (
         <MailItem
-          key={item.mail.mailId}
+          key={item.mail._id} // ✅ changed from mailId to _id
           mail={item}
           onToggleRead={onToggleRead}
           onToggleStar={onToggleStar}

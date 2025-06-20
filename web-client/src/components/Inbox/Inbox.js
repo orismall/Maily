@@ -69,7 +69,7 @@ const Inbox = () => {
   const fetchMails = useCallback(async () => {
     try {
       const session = JSON.parse(localStorage.getItem('session'));
-      if (!session || !session.token || !session.userId) return;
+      if (!session || !session.token || !session._id) return;
 
       const endpointMap = {
         inbox: 'inbox',
@@ -86,7 +86,7 @@ const Inbox = () => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "user-id": session.userId,
+          "user-id": session._id,
           "Authorization": `Bearer ${session.token}`
         }
       });
@@ -145,14 +145,14 @@ const Inbox = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.token}`,
-          'user-id': session.userId
+          'user-id': session._id
         },
         body: JSON.stringify({ isRead: newValue })
       });
 
       setMails(prev =>
         prev.map(mail =>
-          mail.mailId === mailId
+          mail._id === mailId
             ? { ...mail, isRead: newValue }
             : mail
         )
@@ -169,7 +169,7 @@ const Inbox = () => {
         receiver: mailData.receiver || "",
         subject: mailData.subject || "",
         content: mailData.content || "",
-        id: mailData.id || null
+        id: mailData._id || null
       });
       setIsModalOpen(true);
       setIsMinimized(false);
@@ -177,7 +177,7 @@ const Inbox = () => {
     } else {
       setSelectedMail(mailData);
       if (!mailData.isRead) {
-        handleToggleRead(mailData.id, true);
+        handleToggleRead(mailData._id, true);
       }
     }
   };
@@ -208,13 +208,13 @@ const Inbox = () => {
 
     try {
       const session = JSON.parse(localStorage.getItem('session'));
-      if (!session || !session.token || !session.userId) return;
+      if (!session || !session.token || !session._id) return;
 
       const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/search/${encodeURIComponent(query)}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "user-id": session.userId,
+          "user-id": session._id,
           "Authorization": `Bearer ${session.token}`
         }
       });
@@ -249,7 +249,7 @@ const Inbox = () => {
   // Toggle star (favorite) for a mail
   const handleToggleStar = async (mailId, mailType) => {
     const session = JSON.parse(localStorage.getItem('session'));
-    const targetMail = mails.find(m => m.mail.mailId === mailId && m.mail.type === mailType);
+    const targetMail = mails.find(m => m._id === mailId && m.type === mailType);
     if (!targetMail) return;
 
     const newStarValue = !targetMail.isStarred;
@@ -263,7 +263,7 @@ const Inbox = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.token}`,
-          'user-id': session.userId
+          'user-id': session._id
         },
         body: JSON.stringify({ isStarred: newStarValue, mailType })
       });
@@ -272,7 +272,7 @@ const Inbox = () => {
         const response = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/starred`, {
           headers: {
             'Authorization': `Bearer ${session.token}`,
-            'user-id': session.userId
+            'user-id': session._id
           }
         });
         const updatedStarred = await response.json();
@@ -280,7 +280,7 @@ const Inbox = () => {
       } else {
         setMails(prev =>
           prev.map(mail =>
-            mail.mailId === mailId && mail.mail.type === mailType
+            mail._id === mailId && mail.mail.type === mailType
               ? { ...mail, isStarred: newStarValue }
               : mail
           )
@@ -297,7 +297,7 @@ const Inbox = () => {
       const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails?page=${page}`, {
         headers: {
           "Content-Type": "application/json",
-          "user-id": session.userId,
+          "user-id": session._id,
           "Authorization": `Bearer ${session.token}`
         }
       });
@@ -334,10 +334,8 @@ const Inbox = () => {
           'Authorization': `Bearer ${session.token}`
         }
       });
-
-      // Remove the mail from current view
-      setMails(prev => prev.filter(m => m.mailId !== mailId));
-      if (selectedMail?.id === mailId) setSelectedMail(null);
+      fetchMails();             // Refresh updated folder
+      setSelectedMail(null);    // Close mail view if open
     } catch (err) {
       console.error("Error marking as spam:", err);
     }
@@ -358,9 +356,9 @@ const Inbox = () => {
         }
       });
 
-      // Remove mail from spam list
-      setMails(prev => prev.filter(m => m.mailId !== mailId));
-      setSelectedMail(null);
+    fetchMails();
+    setSelectedMail(null);
+
     } catch (err) {
       console.error("Error unmarking spam:", err);
     }
@@ -407,6 +405,7 @@ const Inbox = () => {
       } else {
         fetchMails();
       }
+      setSelectedMail(null);
     } catch (error) {
       alert('Error: ' + error.message);
     }
@@ -423,7 +422,7 @@ const Inbox = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.token}`,
-          'User-Id': session.userId,
+          'User-Id': session._id,
         },
       });
 

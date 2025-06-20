@@ -49,7 +49,6 @@ exports.createUser = async (req, res) => {
     const existingUser = await userService.findUserByEmail(email);
     if (existingUser) return res.status(409).json({ error: 'Email already exists' });
 
-    // Create user with mutex to ensure userId uniqueness
     const newUser = await userCreationMutex.runExclusive(async () => {
       return await userService.createUser({
         email,
@@ -63,7 +62,7 @@ exports.createUser = async (req, res) => {
       });
     });
 
-    res.status(201).location(`/api/users/${newUser.userId}`).end();
+    res.status(201).location(`/api/users/${newUser._id}`).end();
 
   } catch (err) {
     console.error(err);
@@ -71,10 +70,10 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// Get user info by userId
+// Get user info by _id
 exports.getUserById = async (req, res) => {
-  const id = parseInt(req.params.id);
-  const authenticatedId = parseInt(req.header("User-Id"));
+  const id = req.params.id;
+  const authenticatedId = req.user._id.toString();
 
   if (id !== authenticatedId) {
     return res.status(403).json({ error: "Access denied: you can only view your own profile." });

@@ -7,12 +7,11 @@ const mailSchema = require('../models/mails');
 const Mail = mongoose.model('Mail', mailSchema);
 const User = require('../models/users');
 
-
 async function getMails(req, res) {
   await isLoggedIn(req, res, async () => {
-    const user = await mailService.findUserById(req.user.userId);
+    const user = await mailService.findUserById(req.user._id);
     const all = [...user.mails.inbox, ...user.mails.sent];
-    const unique = Array.from(new Map(all.map(m => [m.mail.mailId, m])).values());
+    const unique = Array.from(new Map(all.map(m => [m.mail._id.toString(), m])).values());
     unique.sort((a, b) => b.mail.date - a.mail.date);
     const page = +req.query.page || 1;
     res.json(unique.slice((page - 1) * 50, page * 50));
@@ -21,7 +20,7 @@ async function getMails(req, res) {
 
 async function getInboxMails(req, res) {
   await isLoggedIn(req, res, async () => {
-    const user = await mailService.findUserById(req.user.userId);
+    const user = await mailService.findUserById(req.user._id);
     const sorted = [...user.mails.inbox].sort((a, b) => b.mail.date - a.mail.date);
     const page = +req.query.page || 1;
     res.json(sorted.slice((page - 1) * 50, page * 50));
@@ -30,7 +29,7 @@ async function getInboxMails(req, res) {
 
 async function getSentMails(req, res) {
   await isLoggedIn(req, res, async () => {
-    const user = await mailService.findUserById(req.user.userId);
+    const user = await mailService.findUserById(req.user._id);
     const sorted = [...user.mails.sent].sort((a, b) => b.mail.date - a.mail.date);
     const page = +req.query.page || 1;
     res.json(sorted.slice((page - 1) * 50, page * 50));
@@ -39,7 +38,7 @@ async function getSentMails(req, res) {
 
 async function sendMail(req, res) {
   await isLoggedIn(req, res, async () => {
-    const sender = await mailService.findUserById(req.user.userId);
+    const sender = await mailService.findUserById(req.user._id);
     const { receiver, subject = '(No subject)', content = '' } = req.body;
     const receivers = Array.isArray(receiver) ? receiver : [receiver];
 
@@ -61,8 +60,8 @@ async function sendMail(req, res) {
         });
         await mailDoc.save();
         const mailObj = mailDoc.toObject();
-        await mailService.pushMailToFolder(sender.userId, 'sent', mailObj, true);
-        for (const u of users) await mailService.pushMailToFolder(u.userId, 'spam', mailObj);
+        await mailService.pushMailToFolder(sender._id, 'sent', mailObj, true);
+        for (const u of users) await mailService.pushMailToFolder(u._id, 'spam', mailObj);
         return res.status(201).json({ warning: 'Sent to spam (blacklisted content)' });
       }
     }
@@ -78,18 +77,17 @@ async function sendMail(req, res) {
     await mailDoc.save();
     const mailObj = mailDoc.toObject();
 
-    await mailService.pushMailToFolder(sender.userId, 'sent', mailObj, true);
-    for (const u of users) await mailService.pushMailToFolder(u.userId, 'inbox', mailObj);
-    res.status(201).location(`/api/mails/${mailObj.mailId}`).end();
-
+    await mailService.pushMailToFolder(sender._id, 'sent', mailObj, true);
+    for (const u of users) await mailService.pushMailToFolder(u._id, 'inbox', mailObj);
+    res.status(201).location(`/api/mails/${mailObj._id}`).end();
   });
 }
 
 async function getMailById(req, res) {
   await isLoggedIn(req, res, async () => {
-    const user = await mailService.findUserById(req.user.userId);
-    const id = +req.params.id;
-    const mail = [...user.mails.inbox, ...user.mails.sent].find(m => m.mail.mailId === id);
+    const user = await mailService.findUserById(req.user._id);
+    const mailId = req.params.id;
+    const mail = [...user.mails.inbox, ...user.mails.sent].find(m => m.mail._id?.toString() === mailId);
     if (!mail) return res.status(404).json({ error: 'Mail not found' });
     res.json(mail);
   });
@@ -98,8 +96,8 @@ async function getMailById(req, res) {
 async function updateMail(req, res) {
   await isLoggedIn(req, res, async () => {
     const { isRead, isStarred, subject, content } = req.body;
-    const userId = req.user.userId;
-    const mailId = +req.params.id;
+    const userId = req.user._id;
+    const mailId = req.params.id;
 
     if (isRead !== undefined || isStarred !== undefined) {
       const success = await mailService.updateMailFlags(userId, mailId, { isRead, isStarred });
@@ -107,7 +105,7 @@ async function updateMail(req, res) {
     }
 
     const user = await mailService.findUserById(userId);
-    const sentIds = user.mails.sent.map(i => i.mail.mailId);
+    const sentIds = user.mails.sent.map(i => i.mail._id.toString());
     if (!sentIds.includes(mailId)) return res.status(403).json({ error: 'Only sent mails can be edited' });
 
     const links = [...extractLinks(subject || ''), ...extractLinks(content || '')];
@@ -123,14 +121,14 @@ async function updateMail(req, res) {
 
 async function deleteMail(req, res) {
   await isLoggedIn(req, res, async () => {
-    const success = await mailService.moveToTrash(req.user.userId, +req.params.id);
+    const success = await mailService.moveToTrash(req.user._id, req.params.id);
     res.status(success ? 204 : 404).end();
   });
 }
 
 async function searchMails(req, res) {
   await isLoggedIn(req, res, async () => {
-    const user = await mailService.findUserById(req.user.userId);
+    const user = await mailService.findUserById(req.user._id);
     const q = req.params.query.toLowerCase();
     const all = [...user.mails.inbox, ...user.mails.sent];
     const matches = all.filter(it => {
@@ -142,9 +140,10 @@ async function searchMails(req, res) {
         m.content.toLowerCase().includes(q)
       );
     });
+
     if (!matches.length) return res.status(404).json({ error: 'No mails found' });
 
-    const unique = Array.from(new Map(matches.map(m => [m.mail.mailId, m])).values());
+    const unique = Array.from(new Map(matches.map(m => [m.mail._id.toString(), m])).values());
     unique.sort((a, b) => b.mail.date - a.mail.date);
     res.json(unique.slice(0, 50));
   });
@@ -153,19 +152,18 @@ async function searchMails(req, res) {
 async function addMailToLabel(req, res) {
   await isLoggedIn(req, res, async () => {
     const { mailId, labelId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const user = await mailService.findUserById(userId);
     const folders = Object.keys(user.mails);
     const mailItem = folders
       .flatMap(folder => user.mails[folder])
-      .find(m => m.mail.mailId === +mailId);
+      .find(m => m.mail._id?.toString() === mailId);
 
     if (!mailItem) return res.status(404).json({ error: 'Mail not found' });
 
-    // Add labelId if not already present
-    if (!mailItem.mail.labels.includes(+labelId)) {
-      await mailService.addLabelToMail(userId, +mailId, +labelId);
+    if (!mailItem.mail.labels.includes(labelId)) {
+      await mailService.addLabelToMail(userId, mailId, labelId);
     }
 
     res.sendStatus(204);
@@ -175,24 +173,24 @@ async function addMailToLabel(req, res) {
 async function removeMailFromLabel(req, res) {
   await isLoggedIn(req, res, async () => {
     const { mailId, labelId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const user = await mailService.findUserById(userId);
     const folders = Object.keys(user.mails);
     const mailItem = folders
       .flatMap(folder => user.mails[folder])
-      .find(m => m.mail.mailId === +mailId);
+      .find(m => m.mail._id?.toString() === mailId);
 
     if (!mailItem) return res.status(404).json({ error: 'Mail not found' });
 
-    await mailService.removeLabelFromMail(userId, +mailId, +labelId);
+    await mailService.removeLabelFromMail(userId, mailId, labelId);
     res.sendStatus(204);
   });
 }
 
 async function getStarred(req, res) {
   await isLoggedIn(req, res, async () => {
-    const user = await mailService.findUserById(req.user.userId);
+    const user = await mailService.findUserById(req.user._id);
     const allMails = Object.values(user.mails).flat();
     const starred = allMails.filter(m => m.isStarred);
     starred.sort((a, b) => b.mail.date - a.mail.date);
@@ -200,7 +198,6 @@ async function getStarred(req, res) {
     res.json(starred.slice((page - 1) * 50, page * 50));
   });
 }
-
 
 module.exports = {
   getMails,

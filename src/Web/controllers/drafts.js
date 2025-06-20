@@ -17,7 +17,7 @@ async function createDraft(req, res) {
       labels: [],
     };
 
-    const success = await mailService.createDraft(req.user.userId, mail);
+    const success = await mailService.createDraft(req.user._id, mail);
     if (success) {
       res.status(201).location('/api/drafts').end();
     } else {
@@ -28,7 +28,7 @@ async function createDraft(req, res) {
 
 async function getDrafts(req, res) {
   await isLoggedIn(req, res, async () => {
-    const drafts = await mailService.getDrafts(req.user.userId);
+    const drafts = await mailService.getDrafts(req.user._id);
     const sorted = [...drafts].sort((a, b) => new Date(b.mail.date) - new Date(a.mail.date));
     const page = +req.query.page || 1;
     res.json(sorted.slice((page - 1) * 50, page * 50));
@@ -37,7 +37,7 @@ async function getDrafts(req, res) {
 
 async function getDraftById(req, res) {
   await isLoggedIn(req, res, async () => {
-    const draft = await mailService.getDraftById(req.user.userId, +req.params.id);
+    const draft = await mailService.getDraftById(req.user._id, req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draft not found' });
     res.json(draft);
   });
@@ -45,29 +45,29 @@ async function getDraftById(req, res) {
 
 async function updateDraft(req, res) {
   await isLoggedIn(req, res, async () => {
-    const success = await mailService.updateDraft(req.user.userId, +req.params.id, req.body);
+    const success = await mailService.updateDraft(req.user._id, req.params.id, req.body);
     res.status(success ? 204 : 404).end();
   });
 }
 
 async function deleteDraft(req, res) {
   await isLoggedIn(req, res, async () => {
-    const success = await mailService.deleteDraft(req.user.userId, +req.params.id);
+    const success = await mailService.deleteDraft(req.user._id, req.params.id);
     res.status(success ? 204 : 404).end();
   });
 }
 
 async function sendDraftAsMail(req, res) {
   await isLoggedIn(req, res, async () => {
-    const mail = await mailService.sendDraftAsMail(req.user.userId, +req.params.id);
+    const mail = await mailService.sendDraftAsMail(req.user._id, req.params.id);
     if (!mail) return res.status(404).json({ error: 'Draft not found' });
 
-    // Set req.body for sendMail controller
     req.body = {
       receiver: mail.receiver,
       subject: mail.subject,
       content: mail.content
     };
+
     await sendMail(req, res);
   });
 }
