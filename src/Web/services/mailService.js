@@ -1,5 +1,9 @@
 const User = require('../models/users');
 const mongoose = require('mongoose');
+const mailSchema = require('../models/mails');
+mongoose.model('Mail', mailSchema);
+const Mail = mongoose.model('Mail');
+
 
 // Helper: Find user by MongoDB _id
 async function findUserById(userId) {
@@ -169,8 +173,15 @@ async function deleteFromTrash(userId, mailId) {
     { _id: userId },
     { $pull: { 'mails.trash': { 'mail._id': new mongoose.Types.ObjectId(mailId) } } }
   );
-  return result.modifiedCount > 0;
+
+  if (result.modifiedCount > 0) {
+    await deleteMailDocument(mailId);
+    return true;
+  }
+
+  return false;
 }
+
 
 async function getTrashMailById(userId, mailId) {
   const user = await findUserById(userId);
@@ -194,55 +205,6 @@ async function deleteSpamMail(userId, mailId) {
   );
   return result.modifiedCount > 0;
 }
-
-async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
-  const user = await findUserById(userId);
-  const item = user.mails.spam.find(m => m.mail._id?.equals(mailId));
-  if (!item) return false;
-
-  const { mail, isRead, isStarred } = item;
-  const mailObjectId = new mongoose.Types.ObjectId(mailId);
-
-  // Remove from blacklist
-  await blacklistRemoveFn(mail);
-
-  // Step 1: Pull from spam first
-  await User.updateOne(
-    { _id: userId },
-    { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } }
-  );
-
-  // Step 2: Determine where to push it back
-  const isSender = mail.sender === user.email;
-  const isReceiver = mail.receiver.includes(user.email);
-
-  // Reconstruct mail object to preserve references
-  const restoredEntry = {
-    mail: { ...mail, _id: mailObjectId },
-    isRead,
-    isStarred
-  };
-
-  const pushOps = {};
-  if (isSender && isReceiver) {
-    pushOps['mails.inbox'] = restoredEntry;
-    pushOps['mails.sent'] = restoredEntry;
-  } else if (isSender) {
-    pushOps['mails.sent'] = restoredEntry;
-  } else if (isReceiver) {
-    pushOps['mails.inbox'] = restoredEntry;
-  }
-
-  // Step 3: Push to the relevant folder(s)
-  await User.updateOne(
-    { _id: userId },
-    { $push: pushOps }
-  );
-
-  return true;
-}
-
-
 
 async function markAsSpam(userId, mailId, blacklistUpdateFn) {
   const user = await findUserById(userId);
@@ -285,7 +247,6 @@ async function markAsSpam(userId, mailId, blacklistUpdateFn) {
   return true;
 }
 
-
 async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
   const user = await findUserById(userId);
   const item = user.mails.spam.find(m => m.mail._id?.equals(mailId));
@@ -313,6 +274,36 @@ async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
 
   await User.updateOne({ _id: userId }, updates);
   return true;
+}
+
+async function restoreFromSpam(userId, mailId) {
+  const user = await findUserById(userId);
+  const index = user.mails.spam.findIndex(item => item.mail._id?.equals(mailId));
+  if (index === -1) return false;
+
+  const { mail, isRead, isStarred } = user.mails.spam[index];
+  const mailObjectId = new mongoose.Types.ObjectId(mailId);
+
+  const isSender = mail.sender === user.email;
+  const isReceiver = mail.receiver.includes(user.email);
+
+  const entry = { mail, isRead, isStarred };
+
+  const updates = { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } };
+
+  if (isSender && isReceiver) {
+    updates.$push = {
+      'mails.inbox': entry,
+      'mails.sent': entry
+    };
+  } else if (isSender) {
+    updates.$push = { 'mails.sent': entry };
+  } else if (isReceiver) {
+    updates.$push = { 'mails.inbox': entry };
+  }
+
+  await User.updateOne({ _id: userId }, updates);
+  return mail; // returning mail to update frontend state
 }
 
 async function createDraft(userId, draftData) {
@@ -354,8 +345,13 @@ async function deleteDraft(userId, draftId) {
     { _id: userId },
     { $pull: { 'mails.drafts': { 'mail._id': new mongoose.Types.ObjectId(draftId) } } }
   );
-  return result.modifiedCount > 0;
+  if (result.modifiedCount > 0) {
+    await deleteMailDocument(draftId);
+    return true;
+  }
+  return false;
 }
+
 
 async function sendDraftAsMail(userId, draftId) {
   const user = await findUserById(userId);
@@ -366,6 +362,11 @@ async function sendDraftAsMail(userId, draftId) {
   await deleteDraft(userId, draftId);
   return mail;
 }
+
+async function deleteMailDocument(mailId) {
+  await Mail.deleteOne({ _id: mailId });
+}
+
 
 module.exports = {
   findUserById,
@@ -389,5 +390,6 @@ module.exports = {
   getDrafts,
   getDraftById,
   updateDraft,
-  sendDraftAsMail
+  sendDraftAsMail,
+  deleteMailDocument
 };

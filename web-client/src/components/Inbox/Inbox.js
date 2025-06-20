@@ -348,17 +348,27 @@ const Inbox = () => {
 
     try {
       const session = JSON.parse(localStorage.getItem('session'));
-      await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/spam/${mailId}/mark-as-not-spam`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.token}`
-        }
-      });
+      const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/spam/${mailId}/mark-as-not-spam`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.token}`
+      }
+    });
 
-    fetchMails();
+    if (!res.ok) throw new Error("Failed to unmark spam");
+
+    const restored = await res.json();
+
+    // Remove from current mails (spam)
+    setMails(prev => prev.filter(m => m._id !== mailId));
+
+    // If currentFolder is not spam, also insert it if relevant
+    if (currentFolder === 'inbox' || currentFolder === 'sent') {
+      setMails(prev => [restored, ...prev]);
+    }
+
     setSelectedMail(null);
-
     } catch (err) {
       console.error("Error unmarking spam:", err);
     }
