@@ -81,9 +81,7 @@ exports.getUserById = async (req, res) => {
 
   try {
     const user = await userService.findUserById(id);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     // Strip sensitive fields
     const { password, confirmPassword, mails: { inbox, sent, ...restMails }, mails, ...rest } = user;
@@ -94,3 +92,4 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
