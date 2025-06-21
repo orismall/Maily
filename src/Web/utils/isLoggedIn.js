@@ -18,7 +18,7 @@ const isLoggedIn = async (req, res, next) => {
     if (!user) return res.status(401).json({ error: "Invalid user" });
 
     req.user = user;
-    next(); // 🔥 this is your callback
+    next();
   } catch (err) {
     res.status(401).json({ error: "Invalid or expired token" });
   }
