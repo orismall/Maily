@@ -265,80 +265,96 @@ async function deleteSpamMail(userId, mailId) {
 
 async function markAsSpam(userId, mailId, blacklistUpdateFn) {
   const user = await findUserById(userId);
+  const folders = ['inbox', 'sent'];
+  let found = null;
+  for (const folder of folders) {
+    const item = user.mails[folder].find(m => m.mail._id?.equals(mailId));
+    if (item) {
+      found = item;
+      break;
+    }
+  }
+  if (!found) return false;
+
+  const { mail, isRead, isStarred } = found;
   const mailObjectId = new mongoose.Types.ObjectId(mailId);
 
-  const foldersWithMail = ['inbox', 'sent'].filter(folder =>
-    user.mails[folder].some(m => m.mail._id?.equals(mailId))
-  );
+  // Remove label references
+  const originalLabels = [...(mail.labels || [])];
 
-  if (foldersWithMail.length === 0) return false;
+  if (originalLabels.length > 0) {
+    await Label.updateMany(
+      { _id: { $in: originalLabels }, user: userId },
+      { $pull: { mailIds: mailObjectId } }
+    );
+    await Mail.updateOne(
+      { _id: mailObjectId },
+      { $pull: { labels: { $in: originalLabels } } }
+    );
+  }
 
-  const foundItem = foldersWithMail
-    .map(folder => user.mails[folder].find(m => m.mail._id?.equals(mailId)))
-    .find(Boolean);
-
-  if (!foundItem) return false;
-
-  await blacklistUpdateFn(foundItem.mail);
-
-  // Remove from all folders it's in (inbox/sent)
-  const pullOps = {};
-  foldersWithMail.forEach(folder => {
-    pullOps[`mails.${folder}`] = { 'mail._id': mailObjectId };
-  });
-
-  await User.updateOne(
-    { _id: userId },
-    {
-      $pull: pullOps,
-      $push: {
-        'mails.spam': {
-          mail: foundItem.mail,
-          isRead: foundItem.isRead,
-          isStarred: false
-        }
-      }
+  // Remove from inbox/sent
+  const updates = {
+    $pull: {
+      'mails.inbox': { 'mail._id': mailObjectId },
+      'mails.sent': { 'mail._id': mailObjectId }
+    },
+    $addToSet: {
+      'mails.spam': { mail, isRead, isStarred }
     }
-  );
+  };
 
+  await User.updateOne({ _id: userId }, updates);
+  await blacklistUpdateFn(mail);
   return true;
 }
+
 
 async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
   const user = await findUserById(userId);
   const item = user.mails.spam.find(m => m.mail._id?.equals(mailId));
   if (!item) return false;
+
   const { mail, isRead, isStarred } = item;
+  const mailObjectId = new mongoose.Types.ObjectId(mailId);
+
   await blacklistRemoveFn(mail);
+
   const isSender = mail.sender === user.email;
   const isReceiver = mail.receiver.includes(user.email);
   const entry = { mail, isRead, isStarred };
-  const mailObjectId = new mongoose.Types.ObjectId(mailId);
+
   const updates = { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } };
-  const pushOps = {};
-  if (isSender) pushOps['mails.sent'] = entry;
-  if (isReceiver) pushOps['mails.inbox'] = entry;
-  if (Object.keys(pushOps).length > 0) {
-    updates.$push = pushOps;
+
+  if (isSender && isReceiver) {
+    updates.$push = {
+      'mails.inbox': entry,
+      'mails.sent': entry
+    };
+  } else if (isSender) {
+    updates.$push = { 'mails.sent': entry };
+  } else if (isReceiver) {
+    updates.$push = { 'mails.inbox': entry };
   }
+
   await User.updateOne({ _id: userId }, updates);
-  // Sync labels to Mail and Label documents
-  if (mail.labels?.length > 0) {
-    await Promise.all([
-      Mail.updateOne(
-        { _id: mailObjectId },
-        { $addToSet: { labels: { $each: mail.labels } } }
-      ),
-      ...mail.labels.map(labelId =>
-        Label.updateOne(
-          { _id: labelId, user: userId },
-          { $addToSet: { mailIds: mailId } }
-        )
-      )
-    ]);
+
+  // Re-add label references if needed
+  const restoredLabels = mail.labels || [];
+  if (restoredLabels.length > 0) {
+    await Label.updateMany(
+      { _id: { $in: restoredLabels }, user: userId },
+      { $addToSet: { mailIds: mailObjectId } }
+    );
+    await Mail.updateOne(
+      { _id: mailObjectId },
+      { $addToSet: { labels: { $each: restoredLabels } } }
+    );
   }
-  return true;
+
+  return mail; // return for frontend update
 }
+
 
 
 async function restoreFromSpam(userId, mailId) {
