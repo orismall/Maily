@@ -57,10 +57,7 @@ exports.getAllLabels = (req, res) => {
     const userId = req.user._id;
     const labels = await labelService.getAllLabels(userId);
 
-    res.json(labels.map(label => ({
-      id: label._id,
-      name: label.name,
-      color: label.color
-    })));
+    res.json(labels); // ✅ don't remap `_id`, let frontend receive the true object
+
   });
 };
