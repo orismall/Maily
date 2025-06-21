@@ -33,7 +33,7 @@ const Inbox = () => {
   const [labels, setLabels] = useState([]);
 
   // Fetch user's labels
-  const fetchLabels = async () => {
+  const fetchLabels = useCallback(async () => {
     try {
       const session = JSON.parse(localStorage.getItem('session'));
       const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/labels`, {
@@ -47,7 +47,8 @@ const Inbox = () => {
     } catch (err) {
       console.error("Failed to fetch labels", err);
     }
-  };
+  }, []);
+
 
   // Open compose modal or unminimize it
   const handleComposeClick = () => {
@@ -106,7 +107,7 @@ const Inbox = () => {
   // Load labels on mount
   useEffect(() => {
     fetchLabels();
-  }, []);
+  }, [fetchLabels]);
 
   // Fetch mails when folder/page changes (unless searching)
   useEffect(() => {
@@ -152,11 +153,12 @@ const Inbox = () => {
 
       setMails(prev =>
         prev.map(mail =>
-          mail._id === mailId
+          mail.mail._id === mailId
             ? { ...mail, isRead: newValue }
             : mail
         )
       );
+
     } catch (error) {
       console.error('Failed to update read status', error);
     }
