@@ -26,11 +26,18 @@ async function pushMailToFolder(userId, folder, mailObj, isRead = false) {
 // Update mail flags (read/starred)
 async function updateMailFlags(userId, mailId, updates) {
   const folders = ['inbox', 'sent', 'drafts', 'trash', 'spam'];
+  let found = false; // <-- Declare `found` at the beginning
+
   for (const folder of folders) {
     const base = `mails.${folder}`;
     const setOps = {};
-    if (updates.isRead !== undefined) setOps[`${base}.$[m].isRead`] = updates.isRead;
-    if (updates.isStarred !== undefined) setOps[`${base}.$[m].isStarred`] = updates.isStarred;
+
+    if (updates.isRead !== undefined) {
+      setOps[`${base}.$[m].isRead`] = updates.isRead;
+    }
+    if (updates.isStarred !== undefined) {
+      setOps[`${base}.$[m].isStarred`] = updates.isStarred;
+    }
 
     if (Object.keys(setOps).length > 0) {
       const result = await User.updateOne(
@@ -38,11 +45,15 @@ async function updateMailFlags(userId, mailId, updates) {
         { $set: setOps },
         { arrayFilters: [{ 'm.mail._id': new mongoose.Types.ObjectId(mailId) }] }
       );
-      if (result.modifiedCount > 0) return true;
+
+      if (result.modifiedCount > 0) {
+        found = true;
+      }
     }
   }
-  return false;
+  return found;
 }
+
 
 // Edit the content/subject of a sent mail
 async function updateSentMail(userId, mailId, updates) {

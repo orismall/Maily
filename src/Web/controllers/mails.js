@@ -199,7 +199,14 @@ async function getStarred(req, res) {
   await isLoggedIn(req, res, async () => {
     const user = await mailService.findUserById(req.user._id);
     const allMails = Object.values(user.mails).flat();
-    const starred = allMails.filter(m => m.isStarred);
+    const starredMap = new Map();
+
+    for (const item of allMails) {
+      if (item.isStarred && item.mail && item.mail._id) {
+        starredMap.set(item.mail._id.toString(), item);
+      }
+    }
+    const starred = Array.from(starredMap.values()).sort((a, b) => b.mail.date - a.mail.date);
     starred.sort((a, b) => b.mail.date - a.mail.date);
     const page = +req.query.page || 1;
     res.json(starred.slice((page - 1) * 50, page * 50));

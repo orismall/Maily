@@ -253,15 +253,23 @@ const Inbox = () => {
   // Toggle star (favorite) for a mail
   const handleToggleStar = async (mailId, mailType) => {
     const session = JSON.parse(localStorage.getItem('session'));
-    const targetMail = mails.find(m => m._id === mailId && m.type === mailType);
-    if (!targetMail) return;
-
-    const newStarValue = !targetMail.isStarred;
+    if (!session || !session.token || !session._id) return;
 
     try {
+      // Find the target mail
+      const targetMail = mails.find(m =>
+        m.mail._id === mailId && m.mail.type === mailType
+      );
+      if (!targetMail) return;
+
+      const newStarValue = !targetMail.isStarred;
+
+      // Define the URL based on mail type
       const url = mailType === 'draft'
         ? `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/drafts/${mailId}`
         : `http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails/${mailId}`;
+
+      // Send PATCH request
       await fetch(url, {
         method: 'PATCH',
         headers: {
@@ -269,9 +277,10 @@ const Inbox = () => {
           'Authorization': `Bearer ${session.token}`,
           'user-id': session._id
         },
-        body: JSON.stringify({ isStarred: newStarValue, mailType })
+        body: JSON.stringify({ isStarred: newStarValue })
       });
 
+      // Refresh or update state
       if (currentFolder === 'starred') {
         const response = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/starred`, {
           headers: {
@@ -284,16 +293,17 @@ const Inbox = () => {
       } else {
         setMails(prev =>
           prev.map(mail =>
-            mail._id === mailId && mail.mail.type === mailType
+            mail.mail._id === mailId && mail.mail.type === mailType
               ? { ...mail, isStarred: newStarValue }
               : mail
           )
         );
       }
     } catch (err) {
-      console.error("Error toggling star", err);
+      console.error("Error toggling star:", err);
     }
   };
+
   // Filter mails based on a specific label ID
   const filterMailsByLabel = async (labelId) => {
     try {
