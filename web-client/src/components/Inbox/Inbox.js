@@ -296,27 +296,27 @@ const Inbox = () => {
   const filterMailsByLabel = async (labelId) => {
     try {
       const session = JSON.parse(localStorage.getItem('session'));
-      const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/mails?page=${page}`, {
+
+      const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/labels/${labelId}/mails?page=${page}`, {
         headers: {
           "Content-Type": "application/json",
           "user-id": session._id,
           "Authorization": `Bearer ${session.token}`
         }
       });
-      if (!res.ok) throw new Error("Failed to fetch mails");
 
-      const all = await res.json();
+      if (!res.ok) throw new Error("Failed to fetch labeled mails");
 
-      // Filter only mails that have the specified label
-      const filtered = all.filter(item =>
-        item.mail.labels?.includes(labelId) && currentFolder !== 'trash'
+      const data = await res.json();
+
+      const sorted = data.sort((a, b) =>
+        new Date(b.mail.date) - new Date(a.mail.date)
       );
-
-      setMails(filtered);
+      setMails(sorted);
       setSelectedMail(null);
       setIsInSearchMode(false);
       setCurrentFolder(`label-${labelId}`);
-      setPage(1);
+      // Don't reset the page — let pagination controls work
     } catch (err) {
       console.error("Error filtering mails by label:", err);
     }

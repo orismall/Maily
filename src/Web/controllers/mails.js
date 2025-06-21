@@ -6,6 +6,7 @@ const mailService = require('../services/mailService');
 const mailSchema = require('../models/mails');
 const Mail = mongoose.model('Mail', mailSchema);
 const User = require('../models/users');
+const Label = require('../models/labels');
 
 async function getMails(req, res) {
   await isLoggedIn(req, res, async () => {
@@ -153,19 +154,21 @@ async function addMailToLabel(req, res) {
   await isLoggedIn(req, res, async () => {
     const { mailId, labelId } = req.params;
     const userId = req.user._id;
-
     const user = await mailService.findUserById(userId);
     const folders = Object.keys(user.mails);
     const mailItem = folders
       .flatMap(folder => user.mails[folder])
       .find(m => m.mail._id?.toString() === mailId);
-
     if (!mailItem) return res.status(404).json({ error: 'Mail not found' });
-
-    if (!mailItem.mail.labels.includes(labelId)) {
+    const mailObjectId = new mongoose.Types.ObjectId(mailId);
+    const labelObjectId = new mongoose.Types.ObjectId(labelId);
+    if (!mailItem.mail.labels.some(id => id.toString() === labelId)) {
       await mailService.addLabelToMail(userId, mailId, labelId);
+      await Label.updateOne(
+        { _id: labelObjectId, user: userId },
+        { $addToSet: { mailIds: mailObjectId } }
+      );
     }
-
     res.sendStatus(204);
   });
 }
@@ -174,19 +177,23 @@ async function removeMailFromLabel(req, res) {
   await isLoggedIn(req, res, async () => {
     const { mailId, labelId } = req.params;
     const userId = req.user._id;
-
     const user = await mailService.findUserById(userId);
     const folders = Object.keys(user.mails);
     const mailItem = folders
       .flatMap(folder => user.mails[folder])
       .find(m => m.mail._id?.toString() === mailId);
-
     if (!mailItem) return res.status(404).json({ error: 'Mail not found' });
-
+    const mailObjectId = new mongoose.Types.ObjectId(mailId);
+    const labelObjectId = new mongoose.Types.ObjectId(labelId);
     await mailService.removeLabelFromMail(userId, mailId, labelId);
+    await Label.updateOne(
+      { _id: labelObjectId, user: userId },
+      { $pull: { mailIds: mailObjectId } }
+    );
     res.sendStatus(204);
   });
 }
+
 
 async function getStarred(req, res) {
   await isLoggedIn(req, res, async () => {

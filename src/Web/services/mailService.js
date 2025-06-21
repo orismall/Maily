@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const mailSchema = require('../models/mails');
 mongoose.model('Mail', mailSchema);
 const Mail = mongoose.model('Mail');
-
+const Label = require('../models/labels');
 
 // Helper: Find user by MongoDB _id
 async function findUserById(userId) {
@@ -112,28 +112,71 @@ async function moveToTrash(userId, mailId) {
 
 async function addLabelToMail(userId, mailId, labelId) {
   const folders = ['inbox', 'sent', 'drafts', 'trash', 'spam'];
+
   for (const folder of folders) {
+    const user = await findUserById(userId);
+    const mailItem = user.mails[folder].find(m => m.mail._id?.equals(mailId));
+    if (!mailItem) continue;
+
+    // Check if label already exists
+    const alreadyHasLabel = mailItem.mail.labels?.some(
+      l => l.toString() === labelId
+    );
+    if (alreadyHasLabel) return false;
+
+    // Add label to embedded mail
     const result = await User.updateOne(
       { _id: userId },
       { $addToSet: { [`mails.${folder}.$[m].mail.labels`]: labelId } },
       { arrayFilters: [{ 'm.mail._id': new mongoose.Types.ObjectId(mailId) }] }
     );
-    if (result.modifiedCount > 0) return true;
+
+    if (result.modifiedCount > 0) {
+      // Update Label and Mail documents
+      await Label.updateOne(
+        { _id: labelId, user: userId },
+        { $addToSet: { mailIds: mailId } }
+      );
+
+      await Mail.updateOne(
+        { _id: mailId },
+        { $addToSet: { labels: labelId } }
+      );
+
+      return true;
+    }
   }
+
   return false;
 }
 
+
 async function removeLabelFromMail(userId, mailId, labelId) {
   const folders = ['inbox', 'sent', 'drafts', 'trash', 'spam'];
+  let removedFromMail = false;
   for (const folder of folders) {
     const result = await User.updateOne(
       { _id: userId },
       { $pull: { [`mails.${folder}.$[m].mail.labels`]: labelId } },
       { arrayFilters: [{ 'm.mail._id': new mongoose.Types.ObjectId(mailId) }] }
     );
-    if (result.modifiedCount > 0) return true;
+    if (result.modifiedCount > 0) {
+      removedFromMail = true;
+      break;
+    }
   }
-  return false;
+  if (removedFromMail) {
+    await Label.updateOne(
+      { _id: labelId, user: userId },
+      { $pull: { mailIds: mailId } }
+    );
+  }
+  await Mail.updateOne(
+    { _id: mailId },
+    { $pull: { labels: labelId } }
+  );
+
+  return removedFromMail;
 }
 
 async function getTrashMails(userId) {
@@ -165,6 +208,21 @@ async function restoreMailFromTrash(userId, mailId) {
   }
 
   await User.updateOne({ _id: userId }, updates);
+  if (mail.labels?.length > 0) {
+    await Promise.all(
+      mail.labels.map(labelId =>
+        Label.updateOne(
+          { _id: labelId, user: userId },
+          { $addToSet: { mailIds: mail._id } }
+        )
+      )
+    );
+    // Also ensure mail document has correct labels (in case it's restored without them)
+    await Mail.updateOne(
+      { _id: mail._id },
+      { $addToSet: { labels: { $each: mail.labels || [] } } }
+    );
+  }
   return true;
 }
 
@@ -178,7 +236,6 @@ async function deleteFromTrash(userId, mailId) {
     await deleteMailDocument(mailId);
     return true;
   }
-
   return false;
 }
 
@@ -251,30 +308,35 @@ async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
   const user = await findUserById(userId);
   const item = user.mails.spam.find(m => m.mail._id?.equals(mailId));
   if (!item) return false;
-
   const { mail, isRead, isStarred } = item;
   await blacklistRemoveFn(mail);
-
   const isSender = mail.sender === user.email;
   const isReceiver = mail.receiver.includes(user.email);
   const entry = { mail, isRead, isStarred };
-
   const mailObjectId = new mongoose.Types.ObjectId(mailId);
-
   const updates = { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } };
-
-  if (isSender && isReceiver) {
-    updates.$push = {
-      'mails.inbox': entry,
-      'mails.sent': entry
-    };
-  } else if (isSender) {
-    updates.$push = { 'mails.sent': entry };
-  } else if (isReceiver) {
-    updates.$push = { 'mails.inbox': entry };
+  const pushOps = {};
+  if (isSender) pushOps['mails.sent'] = entry;
+  if (isReceiver) pushOps['mails.inbox'] = entry;
+  if (Object.keys(pushOps).length > 0) {
+    updates.$push = pushOps;
   }
-
   await User.updateOne({ _id: userId }, updates);
+  // Sync labels to Mail and Label documents
+  if (mail.labels?.length > 0) {
+    await Promise.all([
+      Mail.updateOne(
+        { _id: mailObjectId },
+        { $addToSet: { labels: { $each: mail.labels } } }
+      ),
+      ...mail.labels.map(labelId =>
+        Label.updateOne(
+          { _id: labelId, user: userId },
+          { $addToSet: { mailIds: mailId } }
+        )
+      )
+    ]);
+  }
   return true;
 }
 
@@ -289,23 +351,34 @@ async function restoreFromSpam(userId, mailId) {
 
   const isSender = mail.sender === user.email;
   const isReceiver = mail.receiver.includes(user.email);
-
   const entry = { mail, isRead, isStarred };
 
   const updates = { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } };
-
-  if (isSender && isReceiver) {
-    updates.$push = {
-      'mails.inbox': entry,
-      'mails.sent': entry
-    };
-  } else if (isSender) {
-    updates.$push = { 'mails.sent': entry };
-  } else if (isReceiver) {
-    updates.$push = { 'mails.inbox': entry };
+  const pushOps = {};
+  if (isSender) pushOps['mails.sent'] = entry;
+  if (isReceiver) pushOps['mails.inbox'] = entry;
+  if (Object.keys(pushOps).length > 0) {
+    updates.$push = pushOps;
   }
 
   await User.updateOne({ _id: userId }, updates);
+
+  // Sync labels to Mail and Label documents
+  if (mail.labels?.length > 0) {
+    await Promise.all([
+      Mail.updateOne(
+        { _id: mailObjectId },
+        { $addToSet: { labels: { $each: mail.labels } } }
+      ),
+      ...mail.labels.map(labelId =>
+        Label.updateOne(
+          { _id: labelId, user: userId },
+          { $addToSet: { mailIds: mailId } }
+        )
+      )
+    ]);
+  }
+
   return mail; // returning mail to update frontend state
 }
 
