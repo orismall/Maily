@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Maily</string>
+    <string name="login_to_your_maily_account">Login to your Maily account</string>
+    <string name="email_address">Email address</string>
+    <string name="password">Password</string>
+    <string name="log_in">Log In</string>
+    <string name="maily_logo">maily logo</string>
+</resources>
