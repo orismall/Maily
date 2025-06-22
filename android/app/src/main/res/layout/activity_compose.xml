@@ -51,6 +51,7 @@
     <TextView
         android:id="@+id/fromEmail"
         android:layout_width="0dp"
+        android:minHeight="48dp"
         android:layout_height="wrap_content"
         android:hint="@string/from"
         android:textColorHint="#888888"
