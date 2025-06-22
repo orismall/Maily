@@ -14,7 +14,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".activities.InboxActivity"
+            android:name=".activities.ComposeMailActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

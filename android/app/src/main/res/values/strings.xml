@@ -2,4 +2,10 @@
     <string name="app_name">MailyApp</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="close">Close</string>
+    <string name="send">Send</string>
+    <string name="to">To</string>
+    <string name="from">From</string>
+    <string name="subject">Subject</string>
+    <string name="compose_email">Compose email</string>
 </resources>
