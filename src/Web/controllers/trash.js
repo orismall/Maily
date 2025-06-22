@@ -1,74 +1,42 @@
-const User = require('../models/users');
+const mailService = require('../services/mailService');
 const isLoggedIn = require('../utils/isLoggedIn');
 
-// GET /api/trash - Retrieve all trashed mails for authenticated user
-function getTrash(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const page = parseInt(req.query.page) || 1;
-    const PAGE_SIZE = 50;
-    const sorted = [...user.trash].sort((a, b) => new Date(b.mail.date) - new Date(a.mail.date));
-    const start = (page - 1) * PAGE_SIZE;
-    const paginated = sorted.slice(start, start + PAGE_SIZE);
-    res.json(paginated);
+async function getTrash(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const userId = req.user._id;
+    const trash = await mailService.getTrashMails(userId);
+    const sorted = [...trash].sort((a, b) => new Date(b.mail.date) - new Date(a.mail.date));
+    const page = +req.query.page || 1;
+    res.json(sorted.slice((page - 1) * 50, page * 50));
   });
 }
 
-// POST /api/trash/:id/restore - Restore mail from trash back to inbox or sent
-function restoreFromTrash(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-
-    // Find by: item.mail.id (not item.original.id)
-    const index = user.trash.findIndex(item => item.mail.id === mailId);
-    if (index === -1) return res.status(404).json({ error: "Mail not found in trash" });
-
-    const { mail, isRead, isStarred } = user.trash.splice(index, 1)[0];
-    const isSender = mail.sender === user.email;
-    const isReceiver = mail.receiver.includes(user.email);
-    const entry = { mail, isRead, isStarred };
-
-    if (isSender && isReceiver) {
-      user.inbox.unshift(entry);
-      user.sent.unshift(entry);
-    } else if (isSender) {
-      user.sent.unshift(entry);
-    } else if (isReceiver) {
-      user.inbox.unshift(entry);
-    }
-
-    res.status(204).end();
+async function getTrashMailById(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const userId = req.user._id;
+    const mail = await mailService.getTrashMailById(userId, req.params.id);
+    if (!mail) return res.status(404).json({ error: 'Mail not found in trash' });
+    res.json(mail);
   });
 }
 
-
-// DELETE /api/trash/:id - Permanently delete a mail from trash
-function permanentlyDeleteFromTrash(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-    const index = user.trash.findIndex(item => item.mail.id === mailId);
-    if (index === -1) return res.status(404).json({ error: "Mail not found in trash" });
-    user.trash.splice(index, 1);
-    res.status(204).end();
+async function restoreFromTrash(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const success = await mailService.restoreMailFromTrash(req.user._id, req.params.id);
+    res.status(success ? 204 : 404).end();
   });
 }
 
-// GET /api/trash/:id - Retrieve a specific trashed mail by its ID
-function getTrashMailById(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-    const item = user.trash.find(item => item.mail.id === mailId);
-    if (!item) return res.status(404).json({ error: "Mail not found in trash" });
-    res.json(item);
+async function permanentlyDeleteFromTrash(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const success = await mailService.deleteFromTrash(req.user._id, req.params.id);
+    res.status(success ? 204 : 404).end();
   });
 }
 
 module.exports = {
   getTrash,
+  getTrashMailById,
   restoreFromTrash,
-  permanentlyDeleteFromTrash,
-  getTrashMailById
+  permanentlyDeleteFromTrash
 };

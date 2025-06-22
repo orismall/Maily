@@ -76,7 +76,7 @@ export default function Login() {
 
       // Save the session (token and userId) in localStorage
       localStorage.setItem("session", JSON.stringify({
-        userId: data.userId,
+        _id: data.userId,
         token: data.token
       }));
 

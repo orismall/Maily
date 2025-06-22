@@ -16,7 +16,8 @@ const SideBar = ({
   labels,             
   setLabels,          
   onLabelClick,       
-  selectedFolder      
+  selectedFolder,
+  fetchLabels    
 }) => {
 
   // Handle built-in folder button clicks (Inbox, Sent, etc.)
@@ -96,6 +97,7 @@ const SideBar = ({
           setLabels={setLabels}
           onLabelClick={handleLabelSelect}
           selectedFolder={selectedFolder}
+          fetchLabels={fetchLabels}
         />
       </div>
     </div>

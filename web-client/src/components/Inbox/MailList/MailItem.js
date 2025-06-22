@@ -23,13 +23,13 @@ const MailItem = ({
   // Toggle read/unread without opening the mail
   const handleToggleRead = (e) => {
     e.stopPropagation();
-    onToggleRead(mailData.id, !isRead);
+    onToggleRead(mailData._id, !isRead);
   };
 
   // When clicking the mail item, open it and mark as read if needed
   const handleClick = () => {
     if (!isRead) {
-      onToggleRead(mailData.id, true);
+      onToggleRead(mailData._id, true);
     }
     onOpenMail(mailData);
   };
@@ -66,7 +66,7 @@ const MailItem = ({
               className={`star-button ${isStarred ? 'starred' : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleStar(mailData.id, mailData.type);
+                onToggleStar(mailData._id, mailData.type);
               }}
               title={isStarred ? 'Unstar' : 'Star'}
             >
@@ -107,7 +107,7 @@ const MailItem = ({
               className="icon-button restore-button"
               onClick={(e) => {
                 e.stopPropagation();
-                handleRestore(mailData.id);
+                handleRestore(mailData._id);
               }}
               title="Restore"
             >
@@ -119,7 +119,7 @@ const MailItem = ({
               className="icon-button delete-button"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(mailData.id, currentFolder);
+                handleDelete(mailData._id, currentFolder);
               }}
               title="Delete Permanently"
             >
@@ -133,7 +133,7 @@ const MailItem = ({
               className="icon-button delete-button"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(mailData.id, currentFolder);
+                handleDelete(mailData._id, currentFolder);
               }}
               title="Delete Draft"
             >
@@ -157,9 +157,9 @@ const MailItem = ({
               onClick={(e) => {
                 e.stopPropagation();
                 if (currentFolder === 'spam') {
-                  onMarkAsNotSpam(mailData.id, mailData.type);
+                  onMarkAsNotSpam(mailData._id, mailData.type);
                 } else {
-                  onMarkAsSpam(mailData.id, mailData.type);
+                  onMarkAsSpam(mailData._id, mailData.type);
                 }
               }}
               title={currentFolder === 'spam' ? "Mark as Not Spam" : "Mark as Spam"}
@@ -172,7 +172,7 @@ const MailItem = ({
               className="icon-button delete-button"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(mailData.id, currentFolder);
+                handleDelete(mailData._id, currentFolder);
               }}
               title={currentFolder === 'spam' ? "Delete Permanently" : "Move to Trash"}
             >

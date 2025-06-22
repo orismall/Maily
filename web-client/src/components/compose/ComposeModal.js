@@ -49,7 +49,7 @@ const ComposeModal = ({
       console.error("Error saving draft:", err);
     } finally {
       // Reset state and close modal
-      setValues({ receiver: "", subject: "", body: "" });
+      setValues({ receiver: "", subject: "", content: "" });
       setIsMinimized(false);
       onClose();
     }
@@ -60,7 +60,7 @@ const ComposeModal = ({
     const confirmDiscard = window.confirm("Are you sure you want to discard this message?");
     if (!confirmDiscard) return;
 
-    setValues({ receiver: "", subject: "", body: "" });
+    setValues({ receiver: "", subject: "", content: "" });
     setIsMinimized(false);
     onClose();
   };

@@ -1,49 +1,15 @@
-const Label = require('./labels');
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
+const mailSchema = new mongoose.Schema({
+  sender: { type: String, required: true },
+  receiver: { type: [String], required: true },
+  subject: { type: String, required: false, default: '(No subject)' },
+  content: { type: String, required: false, default: '' },
+  date: { type: Date, default: Date.now },
+  labels: { type: [Schema.Types.ObjectId], ref: 'Label', default: [] },
+  type: { type: String, default: 'mail' }
+});
 
-// mailID tracking
-let mailId = 0;
+module.exports = mailSchema;
 
-class Mail {
-  constructor(sender, receivers, subject, content, labels = []) {
-    this.id = ++mailId;
-    this.sender = sender;
-    this.receiver = receivers;
-    this.subject = subject;
-    this.content = content;
-    this.date = new Date();
-    this.labels = labels;
-    this.type = 'mail';
-  }
-}
-
-function addLabelToMail(mail, labelId) {
-  if (!mail.labels.includes(labelId)) {
-    mail.labels.push(labelId);
-    const label = Label.getLabelById(labelId);
-    if (label && !label.mailIds.includes(mail.id)) {
-      label.mailIds.push(mail.id);
-    }
-  }
-}
-
-function removeLabelFromMail(mail, labelId) {
-  const labelIndex = mail.labels.indexOf(labelId);
-  if (labelIndex !== -1) {
-    mail.labels.splice(labelIndex, 1);
-  }
-  const label = Label.getLabelById(labelId);
-  if (label) {
-    const mailIndex = label.mailIds.indexOf(mail.id);
-    if (mailIndex !== -1) {
-      label.mailIds.splice(mailIndex, 1);
-    }
-  }
-}
-
-
-module.exports = {
-  Mail,
-  addLabelToMail,
-  removeLabelFromMail
-};

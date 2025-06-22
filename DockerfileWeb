@@ -15,6 +15,7 @@ RUN npm install async-mutex
 
 # Copy the rest of the source code
 COPY src/Web/ .
+COPY .env .env
 
 # Run the app
 CMD ["node", "app.js"]

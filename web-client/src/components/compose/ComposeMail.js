@@ -28,7 +28,8 @@ const ComposeMail = ({ values, setValues, onClose, onMinimize, onMailSent, curre
     }
 
     // Warn if subject and body are empty
-    if (!values.subject.trim() && !values.content.trim()) {
+    if (!(values.subject || '').trim() && !(values.content || '').trim()) {
+
       const confirmed = window.confirm('Send this message without a subject or text in the body?');
       if (!confirmed) return;
     }

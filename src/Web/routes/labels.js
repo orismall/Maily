@@ -17,5 +17,7 @@ router.patch('/labels/:id', labelsController.editLabelById);
 // DELETE label by ID
 router.delete('/labels/:id', labelsController.deleteLabelById);
 
+// Get all mails associated with a label
+router.get('/labels/:id/mails', labelsController.getMailsByLabel);
 
 module.exports = router;

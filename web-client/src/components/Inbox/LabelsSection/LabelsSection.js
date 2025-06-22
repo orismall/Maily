@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './LabelsSection.css';
 
-const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClick, selectedFolder }) => {
+const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClick, selectedFolder , fetchLabels }) => {
   // State for editing, creating, and displaying label inputs
   const [editingLabelId, setEditingLabelId] = useState(null);
   const [editedLabelName, setEditedLabelName] = useState('');
@@ -11,25 +11,13 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
   const [showInput, setShowInput] = useState(false);
   const inputRef = useRef(null);
 
-  // Fetch existing labels from the server on mount
+  // Fetch labels on initial mount
   useEffect(() => {
-    const fetchLabels = async () => {
-      const session = JSON.parse(localStorage.getItem("session") || "{}");
-      const token = session.token;
-      if (!token) return;
-      try {
-        const res = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/labels`, {
-          headers: { "Authorization": `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch labels");
-        const data = await res.json();
-        setLabels(data);
-      } catch (err) {
-        console.error("Error fetching labels:", err);
-      }
-    };
-    fetchLabels();
-  }, [setLabels]);
+    if (fetchLabels) {
+      fetchLabels();
+    }
+  }, [fetchLabels]);
+
 
   // Hide input form when sidebar collapses
   useEffect(() => {
@@ -81,15 +69,11 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ name: trimmed, color: newColor })
+        body: JSON.stringify({ name: trimmed, color: newColor , userId: session._id})
       });
 
-      if (res.status === 201) {
-        const updated = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/labels`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await updated.json();
-        setLabels(data);
+      if (res.status === 201 && fetchLabels) {
+        await fetchLabels();
       } else {
         const { error } = await res.json();
         alert(error || "Failed to create label.");
@@ -106,7 +90,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
 
   // Start editing an existing label
   const handleEditClick = (label) => {
-    setEditingLabelId(label.id);
+    setEditingLabelId(label._id);
     setEditedLabelName(label.name);
     setEditedColor(label.color);
     setShowInput(false);
@@ -135,12 +119,8 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
         body: JSON.stringify({ name: trimmed, color: editedColor }),
       });
 
-      if (res.status === 204) {
-        const updated = await fetch(`http://localhost:${process.env.REACT_APP_WEB_PORT}/api/labels`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await updated.json();
-        setLabels(data);
+      if (res.status === 204 && fetchLabels) {
+        await fetchLabels(); 
         setEditingLabelId(null);
         setEditedLabelName('');
         setEditedColor('#000000');
@@ -172,8 +152,8 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.status === 204) {
-        setLabels(labels.filter(label => label.id !== labelId));
+      if (res.status === 204 && fetchLabels) {
+        await fetchLabels();
       } else {
         const data = await res.json();
         alert(data.error);
@@ -218,10 +198,10 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
         {labels.map((label, index) => (
           <li
             key={index}
-            className={`label-item ${selectedFolder === `label-${label.id}` ? 'active' : ''}`}
+            className={`label-item ${selectedFolder === `label-${label._id}` ? 'active' : ''}`}
             title={label.name}
           >
-            {editingLabelId === label.id ? (
+            {editingLabelId === label._id ? (
               <form onSubmit={handleEditSubmit} className="label-edit-form">
                 <div className="label-input-row">
                   <input
@@ -255,7 +235,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
                 <span className="label-color-circle" style={{ backgroundColor: label.color }}></span>
                 <span
                   className="label-name"
-                  onClick={() => onLabelClick(label.id)}
+                  onClick={() => onLabelClick(label._id)}
                   style={{ cursor: 'pointer' }}
                 >
                   {collapsed ? label.name.charAt(0).toUpperCase() : label.name}
@@ -263,7 +243,7 @@ const LabelsSection = ({ collapsed, setCollapsed, labels, setLabels, onLabelClic
                 {!collapsed && (
                   <div className="label-actions">
                     <button className="label-edit-btn" title="Edit label" onClick={() => handleEditClick(label)}>✏</button>
-                    <button className="label-delete-btn" title="Delete label" onClick={() => handleDeleteLabel(label.id)}>🗑</button>
+                    <button className="label-delete-btn" title="Delete label" onClick={() => handleDeleteLabel(label._id)}>🗑</button>
                   </div>
                 )}
               </>
