@@ -1,5 +1,6 @@
 package com.example.mailyapp.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.models.Mail;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.ArrayList;
@@ -98,6 +100,12 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                 return false;
             }
         });
+        MaterialButton fabCompose = findViewById(R.id.fabCompose);
+        fabCompose.setOnClickListener(v -> {
+            Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
+            startActivity(intent);
+        });
+
     }
 
     private List<Mail> getDummyMails() {

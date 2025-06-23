@@ -13,8 +13,10 @@
         android:theme="@style/Theme.MailyApp"
         tools:targetApi="31">
 
+        <activity android:name=".activities.ComposeMailActivity" />
+
         <activity
-            android:name=".activities.ComposeMailActivity"
+            android:name=".activities.InboxActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

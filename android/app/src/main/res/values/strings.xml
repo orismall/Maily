@@ -8,4 +8,6 @@
     <string name="from">From</string>
     <string name="subject">Subject</string>
     <string name="compose_email">Compose email</string>
+    <string name="compose_mail">Compose</string>
+    <string name="compose">Compose</string>
 </resources>
