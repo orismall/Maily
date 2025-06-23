@@ -1,19 +1,20 @@
 package com.example.mailyapp.entities;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
 import com.example.mailyapp.utils.Converters;
-
 import java.util.List;
 
 @Entity(tableName = "mails")
-@TypeConverters(Converters.class)  // מסמן להשתמש בממיר כדי לשמור רשימות
+@TypeConverters(Converters.class)
 public class MailEntity {
 
+    @NonNull
     @PrimaryKey
-    private int id;
+    private String id;
 
     private String sender;
     private List<String> receiver;
@@ -23,7 +24,8 @@ public class MailEntity {
     private List<Integer> labels;
     private String type;
 
-    public MailEntity(int id, String sender, List<String> receiver, String subject, String content, String date, List<Integer> labels, String type) {
+    public MailEntity(String id, String sender, List<String> receiver, String subject,
+                      String content, String date, List<Integer> labels, String type) {
         this.id = id;
         this.sender = sender;
         this.receiver = receiver;
@@ -34,9 +36,12 @@ public class MailEntity {
         this.type = type;
     }
 
-    // Getters and setters
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public MailEntity() {}
+
+    // Getters and Setters
+    @NonNull
+    public String getId() { return id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
     public String getSender() { return sender; }
     public void setSender(String sender) { this.sender = sender; }

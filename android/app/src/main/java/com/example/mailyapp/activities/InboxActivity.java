@@ -8,16 +8,16 @@ import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.viewmodels.MailViewModel;
 import com.google.android.material.navigation.NavigationView;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMailClickListener {
@@ -27,7 +27,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private RecyclerView mailRecyclerView;
     private MailAdapter mailAdapter;
     private SearchView searchView;
-
+    private MailViewModel mailViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +37,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayShowTitleEnabled(false); // Hide "MailyApp" title
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         // Setup Drawer (sideBar)
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -49,7 +49,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Handle menu item clicks
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -71,16 +70,28 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             return true;
         });
 
-
-        // Mail list setup
+        // RecyclerView setup
         mailRecyclerView = findViewById(R.id.mailRecyclerView);
         mailRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        List<Mail> dummyMails = getDummyMails();
-        mailAdapter = new MailAdapter(dummyMails, this);
-        mailRecyclerView.setAdapter(mailAdapter);
+        // Temporary hardcoded session
+        getSharedPreferences("session", MODE_PRIVATE)
+                .edit()
+                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA2ODg0MzEsImV4cCI6MTc1MDY5NTYzMX0.80sHaEI19znzMTTbvHNRcFTPcWyZqPre5smTuA6BD7s")
+                .putString("user_id", "68592a46dae5342bc9d3d5fb")
+                .apply();
 
-        // SearchView setup (already inside the Toolbar)
+        // ViewModel setup
+        mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
+        mailViewModel.fetchRemoteInbox(1);
+        mailViewModel.getRemoteInboxMails().observe(this, mails -> {
+            if (mails != null) {
+                mailAdapter = new MailAdapter(mails, this);
+                mailRecyclerView.setAdapter(mailAdapter);
+            }
+        });
+
+        // SearchView setup
         searchView = toolbar.findViewById(R.id.searchView);
         searchView.setIconifiedByDefault(false);
         searchView.setIconified(false);
@@ -88,27 +99,14 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // handle search submit
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                // filter mails while typing
                 return false;
             }
         });
-    }
-
-    private List<Mail> getDummyMails() {
-        List<Mail> mails = new ArrayList<>();
-        mails.add(new Mail(1, "alice@example.com", Arrays.asList("you@example.com"),
-                "Meeting tomorrow", "Don't forget our meeting at 10 AM!", "2025-06-19", new ArrayList<>()));
-        mails.add(new Mail(2, "bob@example.com", Arrays.asList("you@example.com"),
-                "Party Invite", "You're invited to my birthday party this weekend!", "2025-06-18", new ArrayList<>()));
-        mails.add(new Mail(3, "carol@example.com", Arrays.asList("you@example.com"),
-                "Job Opportunity", "We loved your resume. Let's set up an interview.", "2025-06-17", new ArrayList<>()));
-        return mails;
     }
 
     @Override
