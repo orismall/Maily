@@ -1,11 +1,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/label_work"
-        android:title="Work" />
+        android:title="Work"
+        android:checkable="true"/>
     <item
         android:id="@+id/label_personal"
-        android:title="Personal" />
+        android:title="Personal"
+        android:checkable="true"/>
     <item
         android:id="@+id/label_important"
-        android:title="Important" />
+        android:title="Important"
+        android:checkable="true"/>
 </menu>

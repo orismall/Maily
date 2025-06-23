@@ -2,9 +2,15 @@ package com.example.mailyapp.activities;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.mailyapp.R;
@@ -16,7 +22,11 @@ import android.view.MenuItem;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class MailViewActivity extends AppCompatActivity {
+    private final Set<Integer> selectedLabelIds = new HashSet<>();
 
     private TextView subjectTextView, fromTextView, bodyTextView;
     private ImageButton backButton, trashButton, spamButton, readUnreadButton, moreOptionsButtonTop;
@@ -56,46 +66,77 @@ public class MailViewActivity extends AppCompatActivity {
         // Basic back button behavior
         backButton.setOnClickListener(v -> finish());
 
-// Popup menu on top-right 3-dots button
-        moreOptionsButtonTop.setOnClickListener(v -> {
-            PopupMenu popup = new PopupMenu(MailViewActivity.this, v);
-            MenuInflater inflater = popup.getMenuInflater();
-            inflater.inflate(R.menu.mail_more_menu, popup.getMenu());
-
-            popup.setOnMenuItemClickListener(item -> {
-                String label = item.getTitle().toString(); // Get the label text dynamically
-                Toast.makeText(this, "Added to " + label, Toast.LENGTH_SHORT).show();
-
-                // Optional: Save or apply the label to the mail object here
-
-                return true;
-            });
-
-
-            popup.show();
-        });
+        moreOptionsButtonTop.setOnClickListener(v -> showLabelPopup());
 
         moreOptionsButtonInline.setOnClickListener(v -> {
-            PopupMenu popup = new PopupMenu(MailViewActivity.this, v);
-            popup.getMenuInflater().inflate(R.menu.mail_inline_menu, popup.getMenu());
+            View popupView = getLayoutInflater().inflate(R.layout.popup_inline_menu, null);
+            PopupWindow popupWindow = new PopupWindow(popupView,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    true);
 
-            popup.setOnMenuItemClickListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.action_reply) {
-                    Toast.makeText(this, "Reply selected", Toast.LENGTH_SHORT).show();
-                    // Optionally call: replyToMail();
-                    return true;
-                } else if (id == R.id.action_forward) {
-                    Toast.makeText(this, "Forward selected", Toast.LENGTH_SHORT).show();
-                    // Optionally call: forwardMail();
-                    return true;
-                }
-                return false;
+            // Optional: Background for touch outside to dismiss
+            popupWindow.setBackgroundDrawable(null);
+            popupWindow.setElevation(20f); // or 8dp
+
+            // Find options
+            TextView replyOption = popupView.findViewById(R.id.optionReply);
+            TextView forwardOption = popupView.findViewById(R.id.optionForward);
+
+            replyOption.setOnClickListener(view -> {
+                Toast.makeText(this, "Reply selected", Toast.LENGTH_SHORT).show();
+                popupWindow.dismiss();
             });
 
-            popup.show();
+            forwardOption.setOnClickListener(view -> {
+                Toast.makeText(this, "Forward selected", Toast.LENGTH_SHORT).show();
+                popupWindow.dismiss();
+            });
+
+            // Show anchored to the 3-dots button
+            popupWindow.showAsDropDown(moreOptionsButtonInline, -30, 0);
         });
 
 
     }
+
+    private void showLabelPopup() {
+        View popupView = getLayoutInflater().inflate(R.layout.menu_label_popup, null);
+        PopupWindow popupWindow = new PopupWindow(popupView,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                true); // focusable = true so it dismisses when clicking outside
+
+        // Find checkboxes
+        CheckBox workCheck = popupView.findViewById(R.id.label_work);
+        CheckBox personalCheck = popupView.findViewById(R.id.label_personal);
+        CheckBox importantCheck = popupView.findViewById(R.id.label_important);
+
+        // Restore current states
+        workCheck.setChecked(selectedLabelIds.contains(R.id.label_work));
+        personalCheck.setChecked(selectedLabelIds.contains(R.id.label_personal));
+        importantCheck.setChecked(selectedLabelIds.contains(R.id.label_important));
+
+        // Handle toggle
+        View.OnClickListener listener = v -> {
+            CheckBox cb = (CheckBox) v;
+            int id = cb.getId();
+            if (cb.isChecked()) {
+                selectedLabelIds.add(id);
+                Toast.makeText(this, "Labeled: " + cb.getText(), Toast.LENGTH_SHORT).show();
+            } else {
+                selectedLabelIds.remove(id);
+                Toast.makeText(this, "Unlabeled: " + cb.getText(), Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        workCheck.setOnClickListener(listener);
+        personalCheck.setOnClickListener(listener);
+        importantCheck.setOnClickListener(listener);
+
+        // Show anchored to 3-dots button
+        popupWindow.setElevation(8);
+        popupWindow.showAsDropDown(moreOptionsButtonTop, -16, 0);
+    }
+
 }
