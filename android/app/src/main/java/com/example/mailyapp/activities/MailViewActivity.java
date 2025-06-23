@@ -1,5 +1,6 @@
 package com.example.mailyapp.activities;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -10,6 +11,11 @@ import com.example.mailyapp.R;
 import com.example.mailyapp.models.Mail;
 import com.google.android.material.button.MaterialButton;
 
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.widget.PopupMenu;
+import android.widget.Toast;
+
 public class MailViewActivity extends AppCompatActivity {
 
     private TextView subjectTextView, fromTextView, bodyTextView;
@@ -17,6 +23,7 @@ public class MailViewActivity extends AppCompatActivity {
     private ImageButton replyInlineButton, moreOptionsButtonInline, starButton;
     private MaterialButton replyButton, forwardButton;
 
+    @SuppressLint("NonConstantResourceId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,6 +53,49 @@ public class MailViewActivity extends AppCompatActivity {
         }
 
         // Basic back button behavior
+        // Basic back button behavior
         backButton.setOnClickListener(v -> finish());
+
+// Popup menu on top-right 3-dots button
+        moreOptionsButtonTop.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(MailViewActivity.this, v);
+            MenuInflater inflater = popup.getMenuInflater();
+            inflater.inflate(R.menu.mail_more_menu, popup.getMenu());
+
+            popup.setOnMenuItemClickListener(item -> {
+                String label = item.getTitle().toString(); // Get the label text dynamically
+                Toast.makeText(this, "Added to " + label, Toast.LENGTH_SHORT).show();
+
+                // Optional: Save or apply the label to the mail object here
+
+                return true;
+            });
+
+
+            popup.show();
+        });
+
+        moreOptionsButtonInline.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(MailViewActivity.this, v);
+            popup.getMenuInflater().inflate(R.menu.mail_inline_menu, popup.getMenu());
+
+            popup.setOnMenuItemClickListener(item -> {
+                int id = item.getItemId();
+                if (id == R.id.action_reply) {
+                    Toast.makeText(this, "Reply selected", Toast.LENGTH_SHORT).show();
+                    // Optionally call: replyToMail();
+                    return true;
+                } else if (id == R.id.action_forward) {
+                    Toast.makeText(this, "Forward selected", Toast.LENGTH_SHORT).show();
+                    // Optionally call: forwardMail();
+                    return true;
+                }
+                return false;
+            });
+
+            popup.show();
+        });
+
+
     }
 }
