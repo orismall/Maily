@@ -1,132 +1,89 @@
-const User = require('../models/users');
-const Mail = require('../models/mails');
 const isLoggedIn = require('../utils/isLoggedIn');
 const extractLinks = require('../utils/linkExtractor');
 const { sendCommandToServer } = require('../models/blacklist');
+const mailService = require('../services/mailService');
 
-
-// GET /api/spam - Retrieve all spam mails
-function getSpam(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const page = parseInt(req.query.page) || 1;
-    const PAGE_SIZE = 50;
-    const sorted = [...user.spam].sort((a, b) => new Date(b.mail.date) - new Date(a.mail.date));
-    const start = (page - 1) * PAGE_SIZE;
-    const paginated = sorted.slice(start, start + PAGE_SIZE);
-    res.json(paginated);
+// GET /api/spam
+async function getSpam(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const userId = req.user._id;
+    const spam = await mailService.getSpamMails(userId);
+    const sorted = [...spam].sort((a, b) => new Date(b.mail.date) - new Date(a.mail.date));
+    const page = +req.query.page || 1;
+    res.json(sorted.slice((page - 1) * 50, page * 50));
   });
 }
 
-// GET /api/spam/:id - Retrieve specific spam mail
-function getSpamById(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-    const item = user.spam.find(item => item.mail.id === mailId);
-    if (!item) return res.status(404).json({ error: "Mail not found in spam" });
-    res.json(item);
+// GET /api/spam/:id
+async function getSpamById(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const mail = await mailService.getSpamMailById(req.user._id, req.params.id);
+    if (!mail) return res.status(404).json({ error: 'Mail not found in spam' });
+    res.json(mail);
   });
 }
 
-// DELETE /api/spam/:id - Permanently delete mail from spam
-function deleteSpam(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-    const index = user.spam.findIndex(item => item.mail.id === mailId);
-    if (index === -1) return res.status(404).json({ error: "Mail not found in spam" });
-    user.spam.splice(index, 1);
-    res.status(204).end();
+// DELETE /api/spam/:id
+async function deleteSpam(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const success = await mailService.deleteSpamMail(req.user._id, req.params.id);
+    res.status(success ? 204 : 404).end();
   });
 }
 
-// PATCH /api/spam/:id/restore - Move spam mail to inbox
-function restoreFromSpam(req, res) {
-  isLoggedIn(req, res, () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-    const index = user.spam.findIndex(item => item.mail.id === mailId);
-    if (index === -1) return res.status(404).json({ error: "Mail not found in spam" });
-    const { mail, isRead, isStarred } = user.spam.splice(index, 1)[0];
-    const isSender = mail.sender === user.email;
-    const isReceiver = mail.receiver.includes(user.email)
-    if (isSender && isReceiver) {
-      user.inbox.unshift({ mail, isRead, isStarred });
-      user.sent.unshift({ mail, isRead, isStarred });
-    } else if (isSender) {
-      user.sent.unshift({ mail, isRead, isStarred });
-    } else if (isReceiver) {
-      user.inbox.unshift({ mail, isRead, isStarred });
-    }
-    res.status(204).end();
+// POST /api/spam/:id/restore
+async function restoreFromSpam(req, res) {
+  await isLoggedIn(req, res, async () => {
+    const success = await mailService.restoreFromSpam(req.user._id, req.params.id);
+    res.status(success ? 204 : 404).end();
   });
 }
 
 // PATCH /api/spam/:id/mark-as-spam
 async function markAsSpam(req, res) {
-  isLoggedIn(req, res, async () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
+  await isLoggedIn(req, res, async () => {
+    const userId = req.user._id;
+    const mailId = req.params.id;
 
-    const allMails = [...user.inbox, ...user.sent];
-    const item = allMails.find(item => item.mail.id === mailId);
-    if (!item) return res.status(404).json({ error: "Mail not found" });
-
-    const { mail, isRead, isStarred } = item;
-    const contentLinks = extractLinks(mail.content);
-    const subjectLinks = extractLinks(mail.subject);
-    const links = [...contentLinks, ...subjectLinks];
-
-    if (links.length > 0) {
-      for (const link of links) {
-        const response = await sendCommandToServer(`POST ${link}`);
+    const updateFn = async mail => {
+      const links = [...extractLinks(mail.subject), ...extractLinks(mail.content)];
+      if (links.length > 0) {
+        for (const link of links) await sendCommandToServer(`POST ${link}`);
+      } else {
+        await sendCommandToServer(`POST ${mail.sender}`);
       }
-    } else {
-      const response = await sendCommandToServer(`POST ${mail.sender}`);
-    }
+    };
 
-    // Remove from inbox/sent and move to spam
-    user.inbox = user.inbox.filter(item => item.mail.id !== mailId);
-    user.sent = user.sent.filter(item => item.mail.id !== mailId);
-    user.spam.unshift({ mail, isRead, isStarred: false });
-
-    res.status(200).json({ message: "Mail moved to spam and blacklist updated" });
+    const success = await mailService.markAsSpam(userId, mailId, updateFn);
+    res.status(success ? 200 : 404).json(success
+      ? { message: "Mail moved to spam and blacklist updated" }
+      : { error: "Mail not found" });
   });
 }
 
 // PATCH /api/spam/:id/mark-as-not-spam
 async function markAsNotSpam(req, res) {
-  isLoggedIn(req, res, async () => {
-    const user = req.user;
-    const mailId = Number(req.params.id);
-    const index = user.spam.findIndex(item => item.mail.id === mailId);
-    if (index === -1) return res.status(404).json({ error: "Mail not found in spam" });
-    const { mail, isRead, isStarred } = user.spam.splice(index, 1)[0];
-    const contentLinks = extractLinks(mail.content);
-    const subjectLinks = extractLinks(mail.subject);
-    const links = [...contentLinks, ...subjectLinks];
-    if (links.length > 0) {
-      for (const link of links) {
-        await sendCommandToServer(`DELETE ${link}`);
+  await isLoggedIn(req, res, async () => {
+    const userId = req.user._id;
+    const mailId = req.params.id;
+
+    const removeFn = async mail => {
+      const links = [...extractLinks(mail.subject), ...extractLinks(mail.content)];
+      if (links.length > 0) {
+        for (const link of links) await sendCommandToServer(`DELETE ${link}`);
+      } else {
+        await sendCommandToServer(`DELETE ${mail.sender}`);
       }
-    } else {
-      await sendCommandToServer(`DELETE ${mail.sender}`);
+    };
+
+    const restoredMail = await mailService.markAsNotSpam(userId, mailId, removeFn);
+    if (!restoredMail) {
+      return res.status(404).json({ error: "Mail not found in spam" });
     }
-    const isSender = mail.sender === user.email;
-    const isReceiver = mail.receiver.includes(user.email)
-    if (isSender && isReceiver) {
-      user.inbox.unshift({ mail, isRead, isStarred });
-      user.sent.unshift({ mail, isRead, isStarred });
-    } else if (isSender) {
-      user.sent.unshift({ mail, isRead, isStarred });
-    } else if (isReceiver) {
-      user.inbox.unshift({ mail, isRead, isStarred });
-    }
-    res.status(200).json({ message: "Mail restored and blacklist updated" });
+
+    res.status(200).json(restoredMail); // ✅ Return restored mail to update frontend
   });
 }
-
 
 module.exports = {
   getSpam,

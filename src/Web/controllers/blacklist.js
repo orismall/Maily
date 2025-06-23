@@ -12,7 +12,7 @@ function extractStatusCode(response) {
 
 // Add a url to the blacklist
 exports.addToBlacklist = async (req, res) => {
-  isLoggedIn(req, res, async () => {
+  await isLoggedIn(req, res, async () => {
     const user = req.user;
     const { url } = req.body;
     if (!url) {
@@ -30,7 +30,7 @@ exports.addToBlacklist = async (req, res) => {
 
 // Remove a url from the blacklist
 exports.removeFromBlacklist = async (req, res) => {
-  isLoggedIn(req, res, async () => {
+  await isLoggedIn(req, res, async () => {
     const user = req.user;
     const url = req.params.id;
     if (!url) {

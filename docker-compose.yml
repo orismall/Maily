@@ -39,7 +39,8 @@ services:
       - PORT=${WEB_PORT}
       - SERVER_PORT=${SERVER_PORT}
       # Use container name for internal Docker network
-      - SERVER_IP=gmail-server 
+      - SERVER_IP=gmail-server  
+      - MONGO_URI=mongodb://host.docker.internal:27017/MailyDB
 
   gmail-web-client:
     build:
@@ -57,6 +58,16 @@ services:
     depends_on:
       - gmail-web
 
+  mongo:
+    image: mongo:6
+    container_name: gmail-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
 # Define named volumes
 volumes:
   data:
+  mongo-data:

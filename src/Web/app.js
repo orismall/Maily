@@ -9,6 +9,14 @@ const labelRoutes = require('./routes/labels');
 const draftRoutes = require('./routes/drafts');
 const trashRoutes = require('./routes/trash');
 const spamRouter = require('./routes/spam');
+const mongoose = require('mongoose');
+
+require('dotenv').config();
+mongoose.connect(process.env.MONGO_URI,
+    {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    });
 
 app.use(cors());
 
@@ -46,4 +54,5 @@ const PORT = process.env.PORT;
 // JSON formatting
 app.set('json spaces', 2);
 // Start the server and listen on the specified port
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+//app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(process.env.PORT);
