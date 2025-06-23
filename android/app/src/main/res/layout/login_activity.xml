@@ -32,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
-        android:autofillHints=""
+        android:autofillHints="Email"
         android:background="@drawable/input_box"
         android:hint="@string/email_address"
         android:inputType="textEmailAddress"
@@ -44,7 +44,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:autofillHints=""
         android:background="@drawable/input_box"
         android:hint="@string/password"
         android:inputType="textPassword"
@@ -56,7 +55,29 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/log_in"
+        android:textSize="16sp"
         android:backgroundTint="#1a73e8"
         tools:ignore="VisualLintButtonSize" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/dont_have_an_account"
+        android:textColor="#000000"
+        android:textSize="15sp"
+        android:paddingTop="10dp"/>
+
+    <TextView
+        android:id="@+id/registerLink"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:minHeight="48dp"
+        android:text="@string/create_account"
+        android:textColor="#1a73e8"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:paddingTop="10dp"/>
 
 </LinearLayout>
