@@ -121,6 +121,10 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
 
     @Override
     public void onMailClick(Mail mail) {
-        // TODO: open MailViewActivity later
+        Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
+        intent.putExtra("mail", mail);
+        startActivity(intent);
     }
+
+
 }

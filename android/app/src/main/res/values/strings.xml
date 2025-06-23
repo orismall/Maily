@@ -10,4 +10,15 @@
     <string name="compose_email">Compose email</string>
     <string name="compose_mail">Compose</string>
     <string name="compose">Compose</string>
+    <string name="todo">TODO</string>
+
+    <string name="back">Back</string>
+    <string name="delete">Delete</string>
+    <string name="spam">Mark as spam</string>
+    <string name="mark_read_unread">Mark as read/unread</string>
+    <string name="more_options">More options</string>
+    <string name="star">Star</string>
+    <string name="reply">Reply</string>
+    <string name="forward">Forward</string>
+
 </resources>
