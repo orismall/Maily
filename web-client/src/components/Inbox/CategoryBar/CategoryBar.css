@@ -1,0 +1,51 @@
+.mail-header-bar {
+  display: flex;
+  justify-content: space-evenly;
+  padding: 10px;
+  background-color: #f1f3f4;
+  border-bottom: 1px solid #ddd;
+}
+
+.mail-header-bar button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 16px;
+  color: #000;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.mail-header-bar button:hover {
+  background-color: #4c4d4e;
+  color: #f3f4f5;
+}
+
+.mail-header-bar button.active {
+  font-weight: bold;
+  background-color: #4c4d4e;
+  color: #f3f4f5;
+}
+
+.dark .mail-header-bar {
+  background-color: #1f1f1f;
+  border-bottom: 1px solid #444;
+}
+
+.dark .mail-header-bar button {
+  color: #e0e0e0;
+}
+
+.dark .mail-header-bar button:hover {
+  background-color: #333;
+  color: #ffffff;
+}
+
+.dark .mail-header-bar button.active {
+  background-color: #333;
+  color: #ffffff;
+}
