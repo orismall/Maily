@@ -76,7 +76,11 @@
         android:layout_gravity="start"
         android:background="#FFFFFF"
         app:headerLayout="@layout/nav_header"
-        app:itemTextAppearance="@style/NavigationDrawerText"
-        app:menu="@menu/menu_drawer" />
+        app:itemTextAppearance="@style/NavigationDrawerText">
+
+        <!-- Embed your custom drawer layout -->
+        <include layout="@layout/activity_menu_with_labels" />
+    </com.google.android.material.navigation.NavigationView>
+
 
 </androidx.drawerlayout.widget.DrawerLayout>

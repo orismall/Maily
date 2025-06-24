@@ -2,6 +2,9 @@ package com.example.mailyapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,9 +14,12 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
 import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
+import com.example.mailyapp.data.AppDatabase;
+import com.example.mailyapp.data.LabelDao;
 import com.example.mailyapp.models.Mail;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
@@ -29,12 +35,19 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private RecyclerView mailRecyclerView;
     private MailAdapter mailAdapter;
     private SearchView searchView;
+    private AppDatabase db;
+    private LabelDao labelDao;
+    private LinearLayout currentSelectedItem;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_inbox);
+
+        db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
+                        "MailyDB").allowMainThreadQueries().build();
+        labelDao = db.labelDao();
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -44,6 +57,15 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         // Setup Drawer (sideBar)
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
+        LinearLayout createLabelView = navigationView.findViewById(R.id.nav_create_label);
+        if (createLabelView != null) {
+            createLabelView.setOnClickListener(v -> {
+                Intent intent = new Intent(InboxActivity.this, CreateLabelActivity.class);
+                startActivity(intent);
+                drawerLayout.closeDrawer(GravityCompat.START);
+            });
+        }
+
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open,
@@ -52,25 +74,47 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         toggle.syncState();
 
         // Handle menu item clicks
-        navigationView.setNavigationItemSelectedListener(item -> {
-            int id = item.getItemId();
-
-            if (id == R.id.nav_inbox) {
-                // TODO: show inbox
-            } else if (id == R.id.nav_starred) {
-                // TODO: show starred
-            } else if (id == R.id.nav_sent) {
-                // TODO: show sent
-            } else if (id == R.id.nav_drafts) {
-                // TODO: show drafts
-            } else if (id == R.id.nav_spam) {
-                // TODO: show spam
-            } else if (id == R.id.nav_trash) {
-                // TODO: show trash
-            }
-
+        // Set up manual click listeners for nav items
+        findViewById(R.id.nav_inbox).setOnClickListener(v -> {
+            // TODO: handle inbox selection
+            LinearLayout navInbox = findViewById(R.id.nav_inbox);
+            markSelectedItem(navInbox);
             drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
+        });
+
+        findViewById(R.id.nav_starred).setOnClickListener(v -> {
+            // TODO: handle starred
+            LinearLayout navStarred = findViewById(R.id.nav_starred);
+            markSelectedItem(navStarred);
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
+
+        findViewById(R.id.nav_sent).setOnClickListener(v -> {
+            // TODO: handle sent
+            LinearLayout navSent = findViewById(R.id.nav_sent);
+            markSelectedItem(navSent);
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
+
+        findViewById(R.id.nav_drafts).setOnClickListener(v -> {
+            // TODO: handle drafts
+            LinearLayout navDrafts = findViewById(R.id.nav_drafts);
+            markSelectedItem(navDrafts);
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
+
+        findViewById(R.id.nav_spam).setOnClickListener(v -> {
+            // TODO: handle spam
+            LinearLayout navSpam = findViewById(R.id.nav_spam);
+            markSelectedItem(navSpam);
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
+
+        findViewById(R.id.nav_trash).setOnClickListener(v -> {
+            // TODO: handle trash
+            LinearLayout navTrash = findViewById(R.id.nav_trash);
+            markSelectedItem(navTrash);
+            drawerLayout.closeDrawer(GravityCompat.START);
         });
 
 
@@ -124,6 +168,14 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
         intent.putExtra("mail", mail);
         startActivity(intent);
+    }
+
+    private void markSelectedItem(LinearLayout selected) {
+        if (currentSelectedItem != null) {
+            currentSelectedItem.setSelected(false); // Unmark previous
+        }
+        selected.setSelected(true); // Mark new one
+        currentSelectedItem = selected;
     }
 
 

@@ -32,5 +32,4 @@
             android:title="Trash"
             android:icon="@drawable/ic_trash" />
     </group>
-
 </menu>
