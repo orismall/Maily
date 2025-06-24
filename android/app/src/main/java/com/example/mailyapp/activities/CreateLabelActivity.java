@@ -47,5 +47,6 @@ public class CreateLabelActivity extends AppCompatActivity {
             Toast.makeText(this, "Label created", Toast.LENGTH_SHORT).show();
             finish();
         });
+
     }
 }

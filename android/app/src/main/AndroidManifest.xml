@@ -16,7 +16,6 @@
         <activity android:name=".activities.ComposeMailActivity" />
         <activity android:name=".activities.MailViewActivity" />
         <activity android:name=".activities.CreateLabelActivity" />
-        <activity android:name=".activities.SidebarMenuActivity" />
 
         <activity
             android:name=".activities.InboxActivity"

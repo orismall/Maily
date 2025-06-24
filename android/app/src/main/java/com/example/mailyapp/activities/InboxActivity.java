@@ -2,8 +2,13 @@ package com.example.mailyapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -20,6 +25,7 @@ import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.data.AppDatabase;
 import com.example.mailyapp.data.LabelDao;
+import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.models.Mail;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
@@ -37,7 +43,9 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private SearchView searchView;
     private AppDatabase db;
     private LabelDao labelDao;
-    private LinearLayout currentSelectedItem;
+    private View currentSelectedNavItem;
+
+
 
 
     @Override
@@ -48,6 +56,11 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
                         "MailyDB").allowMainThreadQueries().build();
         labelDao = db.labelDao();
+        /* -------------- for cleanup ---------------- */
+
+        /*labelDao.deleteAll();*/
+
+        /* -------------- for cleanup ---------------- */
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -57,6 +70,34 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         // Setup Drawer (sideBar)
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
+        // Find the ListView from the navigation drawer
+        ListView lvLabels = navigationView.findViewById(R.id.lv_labels);
+        List<LabelEntity> labels = labelDao.index();
+
+        ArrayAdapter<LabelEntity> adapter = new ArrayAdapter<LabelEntity>(
+                this, R.layout.item_label, R.id.label_name, labels
+        ) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View row = super.getView(position, convertView, parent);
+                ImageView icon = row.findViewById(R.id.label_icon);
+                // Optional: Change icon or tint dynamically
+                return row;
+            }
+        };
+
+        lvLabels.setAdapter(adapter);
+        lvLabels.setOnItemClickListener((parent, view, position, id) -> {
+            markSelectedItem(view); // Now shared logic
+            LabelEntity clickedLabel = (LabelEntity) parent.getItemAtPosition(position);
+            // Handle label click (e.g., filter mail list)
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
+
+
+
+        justifyListViewHeightBasedOnChildren(lvLabels);
+
         LinearLayout createLabelView = navigationView.findViewById(R.id.nav_create_label);
         if (createLabelView != null) {
             createLabelView.setOnClickListener(v -> {
@@ -170,12 +211,29 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         startActivity(intent);
     }
 
-    private void markSelectedItem(LinearLayout selected) {
-        if (currentSelectedItem != null) {
-            currentSelectedItem.setSelected(false); // Unmark previous
+    private void markSelectedItem(View selected) {
+        if (currentSelectedNavItem != null) {
+            currentSelectedNavItem.setSelected(false); // Unmark previous
         }
-        selected.setSelected(true); // Mark new one
-        currentSelectedItem = selected;
+        selected.setSelected(true);
+        currentSelectedNavItem = selected;
+    }
+
+    public static void justifyListViewHeightBasedOnChildren(ListView listView) {
+        ArrayAdapter adapter = (ArrayAdapter) listView.getAdapter();
+        if (adapter == null) return;
+
+        int totalHeight = 0;
+        for (int i = 0; i < adapter.getCount(); i++) {
+            View listItem = adapter.getView(i, null, listView);
+            listItem.measure(0, 0);
+            totalHeight += listItem.getMeasuredHeight();
+        }
+
+        ViewGroup.LayoutParams params = listView.getLayoutParams();
+        params.height = totalHeight + (listView.getDividerHeight() * (adapter.getCount() - 1));
+        listView.setLayoutParams(params);
+        listView.requestLayout();
     }
 
 
