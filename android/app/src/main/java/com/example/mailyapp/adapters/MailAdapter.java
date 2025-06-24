@@ -79,11 +79,6 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         return mailList != null ? mailList.size() : 0;
     }
 
-    // Allows updating the mail list dynamically
-    public void updateMailList(List<Mail> updatedList) {
-        this.mailList = updatedList;
-        notifyDataSetChanged();
-    }
 
     // ViewHolder class holds references to the views of a single mail item
     public static class MailViewHolder extends RecyclerView.ViewHolder {
@@ -96,5 +91,10 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
             snippetTextView = itemView.findViewById(R.id.mailSnippet);
             dateTextView = itemView.findViewById(R.id.mailDate);
         }
+    }
+
+    public void updateData(List<Mail> newMails) {
+        this.mailList = newMails;
+        notifyDataSetChanged();
     }
 }

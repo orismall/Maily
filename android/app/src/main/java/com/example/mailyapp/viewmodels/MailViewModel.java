@@ -18,12 +18,16 @@ public class MailViewModel extends AndroidViewModel {
     private final MailRepository repository;
     private final LiveData<List<MailEntity>> allMails;
 
-    private final MutableLiveData<List<Mail>> remoteInboxMails = new MutableLiveData<>();
+    private final MutableLiveData<List<Mail>> remoteMails = new MutableLiveData<>();
 
     public MailViewModel(@NonNull Application application) {
         super(application);
         repository = new MailRepository(application);
         allMails = repository.getAllMails();
+    }
+
+    public void fetchFolder(String folderName, int page) {
+        repository.fetchMailsByFolder(folderName, page, remoteMails);
     }
 
     // Room methods
@@ -52,11 +56,7 @@ public class MailViewModel extends AndroidViewModel {
     }
 
     // Retrofit methods
-    public LiveData<List<Mail>> getRemoteInboxMails() {
-        return remoteInboxMails;
-    }
-
-    public void fetchRemoteInbox(int page) {
-        repository.fetchInboxFromServer(page, remoteInboxMails);
+    public LiveData<List<Mail>> getRemoteMails() {
+        return remoteMails;
     }
 }

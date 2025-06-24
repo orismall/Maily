@@ -64,29 +64,50 @@ public class MailRepository {
 
     // === Retrofit ===
 
-    public void fetchInboxFromServer(int page, MutableLiveData<List<Mail>> liveData) {
+    public void fetchMailsByFolder(String folder, int page, MutableLiveData<List<Mail>> liveData) {
         MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
-        Call<List<Mail>> call = mailApi.getInboxMails(page);
+        Call<List<Mail>> call;
+
+        switch (folder.toLowerCase()) {
+            case "inbox":
+                call = mailApi.getInboxMails(page);
+                break;
+            case "sent":
+                call = mailApi.getSentMails(page);
+                break;
+            case "starred":
+                call = mailApi.getStarredMails(page);
+                break;
+            case "drafts":
+                call = mailApi.getDrafts(page);
+                break;
+            case "spam":
+                call = mailApi.getSpamMails(page);
+                break;
+            case "trash":
+                call = mailApi.getTrashMails(page);
+                break;
+            default:
+                Log.e("MailRepository", "Unknown folder: " + folder);
+                return;
+        }
 
         call.enqueue(new Callback<List<Mail>>() {
             @Override
             public void onResponse(Call<List<Mail>> call, Response<List<Mail>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Mail> mailList = response.body();
-                    for (Mail mail : mailList) {
-                        Log.d("MailRepository", "JSON Mail: " + new Gson().toJson(mail));
-                    }
-                    Log.d("MailRepository", "Server response size: " + mailList.size());
+                    //liveData.postValue(mailList);
+                    Log.d("MailRepository", "Fetched " + folder + " mails: " + mailList.size());
 
                     liveData.postValue(mailList);
-                    Log.d("MailRepository", "Fetched mails:");
+
                     for (Mail mail : mailList) {
                         Log.d("MailRepository", "ID: " + mail.getId() +
                                 ", Sender: " + mail.getSender() +
                                 ", Subject: " + mail.getSubject() +
                                 ", Content: " + mail.getContent());
                     }
-
 
                     // Convert to MailEntity
                     List<MailEntity> entityList = new ArrayList<>();
@@ -103,10 +124,9 @@ public class MailRepository {
                         ));
                     }
 
-                    deleteAll();
                     insertAll(entityList);
                 } else {
-                    Log.e("MailRepository", "Response failed: " + response.code());
+                    Log.e("MailRepository", "Failed to fetch " + folder + ": " + response.code());
                 }
             }
 

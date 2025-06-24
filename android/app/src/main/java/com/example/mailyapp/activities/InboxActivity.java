@@ -1,6 +1,7 @@
 package com.example.mailyapp.activities;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +29,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private MailAdapter mailAdapter;
     private SearchView searchView;
     private MailViewModel mailViewModel;
+    private String currentFolder = "inbox";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,18 +55,19 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.nav_inbox) {
-                // TODO: show inbox
-            } else if (id == R.id.nav_starred) {
-                // TODO: show starred
-            } else if (id == R.id.nav_sent) {
-                // TODO: show sent
-            } else if (id == R.id.nav_drafts) {
-                // TODO: show drafts
-            } else if (id == R.id.nav_spam) {
-                // TODO: show spam
-            } else if (id == R.id.nav_trash) {
-                // TODO: show trash
+            String folder = null;
+            if (id == R.id.nav_inbox) folder = "inbox";
+            else if (id == R.id.nav_sent) folder = "sent";
+            else if (id == R.id.nav_starred) folder = "starred";
+            else if (id == R.id.nav_drafts) folder = "drafts";
+            else if (id == R.id.nav_spam) folder = "spam";
+            else if (id == R.id.nav_trash) folder = "trash";
+
+            if (folder != null) {
+                currentFolder = folder;
+                mailViewModel.fetchFolder(folder, 1);
+                getSupportActionBar().setTitle(capitalize(folder));
+                item.setChecked(true);
             }
 
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -77,17 +81,20 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         // Temporary hardcoded session
         getSharedPreferences("session", MODE_PRIVATE)
                 .edit()
-                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA3NTAwNTUsImV4cCI6MTc1MDc1NzI1NX0.F_JPbkfj6_nphZaeS5FQfnAIYs-gieEwwm6FC02CD0w")
+                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA3NjQ0MTcsImV4cCI6MTc1MDc3MTYxN30.deTSu5pN2Js6D0REzMm1BmCB_sLoj1fsbMjpoGAIeCU")
                 .putString("user_id", "68592a46dae5342bc9d3d5fb")
                 .apply();
 
         // ViewModel setup
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
-        mailViewModel.fetchRemoteInbox(1);
-        mailViewModel.getRemoteInboxMails().observe(this, mails -> {
-            if (mails != null) {
+        mailViewModel.fetchFolder(currentFolder, 1);
+        mailViewModel.getRemoteMails().observe(this, mails -> {
+            Log.d("InboxActivity", "🚨 Received " + (mails != null ? mails.size() : "null") + " mails");
+            if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
                 mailRecyclerView.setAdapter(mailAdapter);
+            } else {
+                mailAdapter.updateData(mails);
             }
         });
 
@@ -112,5 +119,9 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     @Override
     public void onMailClick(Mail mail) {
         // TODO: open MailViewActivity later
+    }
+
+    private String capitalize(String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 }
