@@ -44,7 +44,10 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private AppDatabase db;
     private LabelDao labelDao;
     private View currentSelectedNavItem;
+    private ArrayAdapter<LabelEntity> adapter;
+    private ListView lvLabels;
 
+    List<LabelEntity> labels;
 
 
 
@@ -71,10 +74,10 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
         // Find the ListView from the navigation drawer
-        ListView lvLabels = navigationView.findViewById(R.id.lv_labels);
-        List<LabelEntity> labels = labelDao.index();
+        lvLabels = navigationView.findViewById(R.id.lv_labels);
+        labels = labelDao.index();
 
-        ArrayAdapter<LabelEntity> adapter = new ArrayAdapter<LabelEntity>(
+        adapter = new ArrayAdapter<LabelEntity>(
                 this, R.layout.item_label, R.id.label_name, labels
         ) {
             @Override
@@ -106,6 +109,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                 drawerLayout.closeDrawer(GravityCompat.START);
             });
         }
+
+
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar,
@@ -191,6 +196,15 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             startActivity(intent);
         });
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        labels.clear();
+        labels.addAll(labelDao.index());
+        adapter.notifyDataSetChanged();
+        justifyListViewHeightBasedOnChildren(lvLabels);
     }
 
     private List<Mail> getDummyMails() {
