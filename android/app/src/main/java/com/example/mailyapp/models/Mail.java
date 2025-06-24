@@ -9,7 +9,7 @@ public class Mail {
     private String subject;
     private String content;
     private String date;
-    private List<Integer> labels;
+    private List<String> labels;
     private String type;
 
     // Getters
@@ -19,7 +19,7 @@ public class Mail {
     public String getSubject() { return subject; }
     public String getContent() { return content; }
     public String getDate() { return date; }
-    public List<Integer> getLabels() { return labels; }
+    public List<String> getLabels() { return labels; }
     public String getType() { return type; }
 
     // Setters (required by Gson)
@@ -29,6 +29,6 @@ public class Mail {
     public void setSubject(String subject) { this.subject = subject; }
     public void setContent(String content) { this.content = content; }
     public void setDate(String date) { this.date = date; }
-    public void setLabels(List<Integer> labels) { this.labels = labels; }
+    public void setLabels(List<String> labels) { this.labels = labels; }
     public void setType(String type) { this.type = type; }
 }

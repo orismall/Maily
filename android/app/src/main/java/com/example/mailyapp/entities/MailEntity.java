@@ -15,17 +15,16 @@ public class MailEntity {
     @NonNull
     @PrimaryKey
     private String id;
-
     private String sender;
     private List<String> receiver;
     private String subject;
     private String content;
     private String date;
-    private List<Integer> labels;
+    private List<String> labels;
     private String type;
 
     public MailEntity(String id, String sender, List<String> receiver, String subject,
-                      String content, String date, List<Integer> labels, String type) {
+                      String content, String date, List<String> labels, String type) {
         this.id = id;
         this.sender = sender;
         this.receiver = receiver;
@@ -58,8 +57,8 @@ public class MailEntity {
     public String getDate() { return date; }
     public void setDate(String date) { this.date = date; }
 
-    public List<Integer> getLabels() { return labels; }
-    public void setLabels(List<Integer> labels) { this.labels = labels; }
+    public List<String> getLabels() { return labels; }
+    public void setLabels(List<String> labels) { this.labels = labels; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }

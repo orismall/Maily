@@ -77,7 +77,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         // Temporary hardcoded session
         getSharedPreferences("session", MODE_PRIVATE)
                 .edit()
-                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA2ODg0MzEsImV4cCI6MTc1MDY5NTYzMX0.80sHaEI19znzMTTbvHNRcFTPcWyZqPre5smTuA6BD7s")
+                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA3NTAwNTUsImV4cCI6MTc1MDc1NzI1NX0.F_JPbkfj6_nphZaeS5FQfnAIYs-gieEwwm6FC02CD0w")
                 .putString("user_id", "68592a46dae5342bc9d3d5fb")
                 .apply();
 
