@@ -18,6 +18,8 @@ public interface LabelDao {
     LabelEntity get(String id);
     @Query("DELETE FROM LabelEntity")
     void deleteAll();
+    @Query("DELETE FROM LabelEntity WHERE id = :id")
+    void deleteById(int id);
     @Insert
     void insert(LabelEntity... labels);
     @Update

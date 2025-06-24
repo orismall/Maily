@@ -10,6 +10,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -59,16 +60,11 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
                         "MailyDB").allowMainThreadQueries().build();
         labelDao = db.labelDao();
-        /* -------------- for cleanup ---------------- */
-
-        /*labelDao.deleteAll();*/
-
-        /* -------------- for cleanup ---------------- */
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayShowTitleEnabled(false); // Hide "MailyApp" title
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         // Setup Drawer (sideBar)
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -83,12 +79,59 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View row = super.getView(position, convertView, parent);
-                ImageView icon = row.findViewById(R.id.label_icon);
-                // Optional: Change icon or tint dynamically
+
+                TextView labelText = row.findViewById(R.id.label_name);
+                ImageView trashIcon = row.findViewById(R.id.label_trash_icon);
+                ImageView editIcon = row.findViewById(R.id.label_edit_icon);
+                LabelEntity label = getItem(position);
+
+                if (label != null) {
+                    labelText.setText(label.getName());
+
+                    trashIcon.setOnClickListener(v -> {
+                        new androidx.appcompat.app.AlertDialog.Builder(InboxActivity.this)
+                                .setTitle("Delete Label")
+                                .setMessage("Are you sure you want to delete this label?")
+                                .setPositiveButton("Delete", (dialog, which) -> {
+                                    labelDao.delete(label);
+                                    labels.remove(label);
+                                    notifyDataSetChanged();
+                                    justifyListViewHeightBasedOnChildren(lvLabels);
+                                    Toast.makeText(InboxActivity.this, "Label deleted", Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton("Cancel", null)
+                                .show();
+                    });
+
+                    editIcon.setOnClickListener(v -> {
+                        final android.widget.EditText input = new android.widget.EditText(InboxActivity.this);
+                        input.setText(label.getName());
+                        input.setSelection(label.getName().length());
+                        new androidx.appcompat.app.AlertDialog.Builder(InboxActivity.this)
+                                .setTitle("Edit Label")
+                                .setView(input)
+                                .setPositiveButton("Save", (dialog, which) -> {
+                                    String newName = input.getText().toString().trim();
+                                    if (!newName.isEmpty()) {
+                                        label.setName(newName);
+                                        labelDao.update(label);
+                                        notifyDataSetChanged();
+                                        Toast.makeText(InboxActivity.this, "Label updated", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(InboxActivity.this, "Label name can't be empty", Toast.LENGTH_SHORT).show();
+                                    }
+                                })
+                                .setNegativeButton("Cancel", null)
+                                .show();
+                    });
+
+                }
+
                 return row;
             }
-        };
 
+
+        };
         lvLabels.setAdapter(adapter);
         lvLabels.setOnItemClickListener((parent, view, position, id) -> {
             markSelectedItem(view); // Now shared logic
@@ -97,10 +140,9 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
-
-
         justifyListViewHeightBasedOnChildren(lvLabels);
 
+        // create label
         LinearLayout createLabelView = navigationView.findViewById(R.id.nav_create_label);
         if (createLabelView != null) {
             createLabelView.setOnClickListener(v -> {
@@ -109,7 +151,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                 drawerLayout.closeDrawer(GravityCompat.START);
             });
         }
-
 
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
