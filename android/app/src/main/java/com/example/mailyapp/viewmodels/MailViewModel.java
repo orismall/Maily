@@ -18,7 +18,6 @@ public class MailViewModel extends AndroidViewModel {
     private final MailRepository repository;
     private final LiveData<List<MailEntity>> allMails;
 
-    // תשאירי אותו יציב לאורך כל החיים של ה-ViewModel
     private final MutableLiveData<List<Mail>> remoteInboxMails = new MutableLiveData<>();
 
     public MailViewModel(@NonNull Application application) {

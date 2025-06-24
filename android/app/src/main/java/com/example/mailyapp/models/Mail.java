@@ -22,7 +22,7 @@ public class Mail {
     public List<String> getLabels() { return labels; }
     public String getType() { return type; }
 
-    // Setters (required by Gson)
+    // Setters
     public void setId(String id) { this.id = id; }
     public void setSender(String sender) { this.sender = sender; }
     public void setReceiver(List<String> receiver) { this.receiver = receiver; }

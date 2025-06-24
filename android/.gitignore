@@ -1,15 +1,48 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Gradle files
+.gradle/
+build/
+**/build/
+
+# Local configuration
 local.properties
+*.iml
+.idea/
+
+# Android Studio specific
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/assetWizardSettings.xml
+.idea/navEditor.xml
+.idea/gradle.xml
+.idea/compiler.xml
+.idea/misc.xml
+
+# Log files
+*.log
+
+# OS junk
+.DS_Store
+
+# APK, keystore and signing
+*.apk
+*.ap_
+*.jks
+
+# NDK / Native
+.cxx/
+.externalNativeBuild/
+
+# Captures (recorded videos/screenshots in emulator)
+captures/
+
+# Unit test coverage
+*.ec
+
+# Kotlin build folder
+.kotlinc/
+
+# Others
+*.hprof
+*.lock

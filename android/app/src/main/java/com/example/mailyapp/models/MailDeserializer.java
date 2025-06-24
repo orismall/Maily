@@ -10,7 +10,7 @@ import java.util.List;
 public class MailDeserializer implements JsonDeserializer<Mail> {
     @Override
     public Mail deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        Log.d("MailDeserializer", "📬 Raw JSON received: " + json.toString());
+        Log.d("MailDeserializer", "Raw JSON received: " + json.toString());
 
         JsonObject obj = json.getAsJsonObject();
         Mail mail = new Mail();
