@@ -2,6 +2,7 @@ package com.example.mailyapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -21,7 +22,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
-
+import androidx.lifecycle.ViewModelProvider;
 import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.data.AppDatabase;
@@ -30,7 +31,7 @@ import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.models.Mail;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
-
+import com.example.mailyapp.viewmodels.MailViewModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +50,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private ListView lvLabels;
 
     List<LabelEntity> labels;
-
+    private MailViewModel mailViewModel;
+    private String currentFolder = "inbox";
 
 
     @Override
@@ -165,6 +167,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         findViewById(R.id.nav_inbox).setOnClickListener(v -> {
             // TODO: handle inbox selection
             LinearLayout navInbox = findViewById(R.id.nav_inbox);
+            currentFolder = "inbox";
+            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navInbox);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
@@ -172,6 +176,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         findViewById(R.id.nav_starred).setOnClickListener(v -> {
             // TODO: handle starred
             LinearLayout navStarred = findViewById(R.id.nav_starred);
+            currentFolder = "starred";
+            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navStarred);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
@@ -179,6 +185,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         findViewById(R.id.nav_sent).setOnClickListener(v -> {
             // TODO: handle sent
             LinearLayout navSent = findViewById(R.id.nav_sent);
+            currentFolder = "sent";
+            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navSent);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
@@ -186,6 +194,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         findViewById(R.id.nav_drafts).setOnClickListener(v -> {
             // TODO: handle drafts
             LinearLayout navDrafts = findViewById(R.id.nav_drafts);
+            currentFolder = "drafts";
+            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navDrafts);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
@@ -193,6 +203,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         findViewById(R.id.nav_spam).setOnClickListener(v -> {
             // TODO: handle spam
             LinearLayout navSpam = findViewById(R.id.nav_spam);
+            currentFolder = "spam";
+            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navSpam);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
@@ -200,18 +212,35 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         findViewById(R.id.nav_trash).setOnClickListener(v -> {
             // TODO: handle trash
             LinearLayout navTrash = findViewById(R.id.nav_trash);
+            currentFolder = "trash";
+            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navTrash);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
+        // Temporary hardcoded session
+        getSharedPreferences("session", MODE_PRIVATE)
+                .edit()
+                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU4MTE3ZmQzNjkxMDAxN2JlMWIxYmYiLCJpYXQiOjE3NTA4NDAzMTgsImV4cCI6MTc1MDg0NzUxOH0.olN0yEN-u_vBetezFHrGHaWCbfgwIrRQgnedRea17j0")
+                .putString("user_id", "68592a46dae5342bc9d3d5fb")
+                .apply();
 
         // Mail list setup
         mailRecyclerView = findViewById(R.id.mailRecyclerView);
         mailRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        List<Mail> dummyMails = getDummyMails();
-        mailAdapter = new MailAdapter(dummyMails, this);
-        mailRecyclerView.setAdapter(mailAdapter);
+        mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
+        mailViewModel.fetchFolder(currentFolder, 1);
+        mailViewModel.getRemoteMails().observe(this, mails -> {
+            Log.d("InboxActivity", "🚨 Received " + (mails != null ? mails.size() : "null") + " mails");
+            if (mailAdapter == null) {
+                mailAdapter = new MailAdapter(mails, this);
+                mailRecyclerView.setAdapter(mailAdapter);
+            } else {
+                mailAdapter.updateData(mails);
+            }
+        });
+
 
         // SearchView setup (already inside the Toolbar)
         searchView = toolbar.findViewById(R.id.searchView);
@@ -248,21 +277,11 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         justifyListViewHeightBasedOnChildren(lvLabels);
     }
 
-    private List<Mail> getDummyMails() {
-        List<Mail> mails = new ArrayList<>();
-        mails.add(new Mail(1, "alice@example.com", Arrays.asList("you@example.com"),
-                "Meeting tomorrow", "Don't forget our meeting at 10 AM!", "2025-06-19", new ArrayList<>()));
-        mails.add(new Mail(2, "bob@example.com", Arrays.asList("you@example.com"),
-                "Party Invite", "You're invited to my birthday party this weekend!", "2025-06-18", new ArrayList<>()));
-        mails.add(new Mail(3, "carol@example.com", Arrays.asList("you@example.com"),
-                "Job Opportunity", "We loved your resume. Let's set up an interview.", "2025-06-17", new ArrayList<>()));
-        return mails;
-    }
-
     @Override
     public void onMailClick(Mail mail) {
         Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
         intent.putExtra("mail", mail);
+
         startActivity(intent);
     }
 

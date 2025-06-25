@@ -12,6 +12,7 @@ import com.example.mailyapp.models.Mail;
 
 import java.util.List;
 
+
 public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder> {
 
     private List<Mail> mailList;
@@ -40,16 +41,28 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
     // Binds data from a Mail object to the views in the ViewHolder
     @Override
     public void onBindViewHolder(@NonNull MailViewHolder holder, int position) {
+        if (mailList == null || position >= mailList.size()) {
+            holder.senderTextView.setText("(Error)");
+            return;
+        }
+
         Mail mail = mailList.get(position);
 
-        holder.senderTextView.setText(mail.getSender());
-        holder.subjectTextView.setText(mail.getSubject());
+        String sender = mail.getSender();
+        holder.senderTextView.setText(sender != null ? sender : "(No sender)");
+
+        String subject = mail.getSubject();
+        holder.subjectTextView.setText(subject != null ? subject : "(No subject)");
+
         String snippet = mail.getContent();
-        if (snippet.length() > 60) {
+        if (snippet != null && snippet.length() > 60) {
             snippet = snippet.substring(0, 60) + "...";
         }
-        holder.snippetTextView.setText(snippet);
-        holder.dateTextView.setText(mail.getDate());
+        holder.snippetTextView.setText(snippet != null ? snippet : "");
+
+        String date = mail.getDate();
+        holder.dateTextView.setText(date != null ? date : "");
+
 
         // Make subject bold if mail is considered unread (label -1)
         // Later replace with mail.isRead()
@@ -60,7 +73,6 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         }
         holder.itemView.setOnClickListener(v -> listener.onMailClick(mail));
     }
-
     // Returns the total number of mails
     @Override
     public int getItemCount() {
@@ -84,5 +96,9 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
             snippetTextView = itemView.findViewById(R.id.mailSnippet);
             dateTextView = itemView.findViewById(R.id.mailDate);
         }
+    }
+    public void updateData(List<Mail> newMails) {
+        this.mailList = newMails;
+        notifyDataSetChanged();
     }
 }

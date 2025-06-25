@@ -5,8 +5,10 @@ import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import com.example.mailyapp.entities.MailEntity;
+import com.example.mailyapp.models.Mail;
 import com.example.mailyapp.repositories.MailRepository;
 
 import java.util.List;
@@ -16,12 +18,19 @@ public class MailViewModel extends AndroidViewModel {
     private final MailRepository repository;
     private final LiveData<List<MailEntity>> allMails;
 
+    private final MutableLiveData<List<Mail>> remoteMails = new MutableLiveData<>();
+
     public MailViewModel(@NonNull Application application) {
         super(application);
         repository = new MailRepository(application);
         allMails = repository.getAllMails();
     }
 
+    public void fetchFolder(String folderName, int page) {
+        repository.fetchMailsByFolder(folderName, page, remoteMails);
+    }
+
+    // Room methods
     public LiveData<List<MailEntity>> getAllMails() {
         return allMails;
     }
@@ -34,7 +43,7 @@ public class MailViewModel extends AndroidViewModel {
         repository.insertAll(mails);
     }
 
-    public void deleteById(int mailId) {
+    public void deleteById(String mailId) {
         repository.deleteById(mailId);
     }
 
@@ -42,7 +51,12 @@ public class MailViewModel extends AndroidViewModel {
         repository.deleteAll();
     }
 
-    public LiveData<MailEntity> getMailById(int id) {
+    public LiveData<MailEntity> getMailById(String id) {
         return repository.getMailById(id);
+    }
+
+    // Retrofit methods
+    public LiveData<List<Mail>> getRemoteMails() {
+        return remoteMails;
     }
 }

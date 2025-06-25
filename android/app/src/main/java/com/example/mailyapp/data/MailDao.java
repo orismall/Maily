@@ -5,7 +5,6 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
-import androidx.room.Delete;
 
 import com.example.mailyapp.entities.MailEntity;
 
@@ -25,13 +24,13 @@ public interface MailDao {
     @Query("SELECT * FROM mails ORDER BY date DESC")
     LiveData<List<MailEntity>> getAllMails();
 
-    // Get a specific mail by id
+    // Get a specific mail by id (String-based for MongoDB _id)
     @Query("SELECT * FROM mails WHERE id = :mailId")
-    LiveData<MailEntity> getMailById(int mailId);
+    LiveData<MailEntity> getMailById(String mailId);
 
     // Delete a mail by ID
     @Query("DELETE FROM mails WHERE id = :mailId")
-    void deleteById(int mailId);
+    void deleteById(String mailId);
 
     // Delete all mails
     @Query("DELETE FROM mails")
