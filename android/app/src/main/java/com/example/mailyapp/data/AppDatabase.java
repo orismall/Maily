@@ -6,11 +6,11 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
-
+import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.utils.Converters;
 
-@Database(entities = {MailEntity.class}, version = 1, exportSchema = false)
+@Database(entities = {MailEntity.class, LabelEntity.class}, version = 2, exportSchema = false)
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -18,7 +18,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
     // DAO getter
     public abstract MailDao mailDao();
-
+    public abstract LabelDao labelDao();
     // Singleton instance
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
@@ -27,7 +27,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(
                             context.getApplicationContext(),
                             AppDatabase.class,
-                            "maily_database"
+                            "MailyDB"
                     ).build();
                 }
             }

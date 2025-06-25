@@ -12,6 +12,7 @@ import com.example.mailyapp.models.Mail;
 
 import java.util.List;
 
+
 public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder> {
 
     private List<Mail> mailList;
@@ -72,13 +73,17 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         }
         holder.itemView.setOnClickListener(v -> listener.onMailClick(mail));
     }
-
     // Returns the total number of mails
     @Override
     public int getItemCount() {
         return mailList != null ? mailList.size() : 0;
     }
 
+    // Allows updating the mail list dynamically
+    public void updateMailList(List<Mail> updatedList) {
+        this.mailList = updatedList;
+        notifyDataSetChanged();
+    }
 
     // ViewHolder class holds references to the views of a single mail item
     public static class MailViewHolder extends RecyclerView.ViewHolder {
@@ -92,7 +97,6 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
             dateTextView = itemView.findViewById(R.id.mailDate);
         }
     }
-
     public void updateData(List<Mail> newMails) {
         this.mailList = newMails;
         notifyDataSetChanged();

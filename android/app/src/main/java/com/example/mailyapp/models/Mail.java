@@ -1,8 +1,8 @@
 package com.example.mailyapp.models;
-
+import java.io.Serializable;
 import java.util.List;
 
-public class Mail {
+public class Mail implements Serializable {
     private String id;
     private String sender;
     private List<String> receiver;

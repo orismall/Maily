@@ -41,6 +41,7 @@ dependencies {
 
     // Room dependencies
     implementation ("androidx.room:room-runtime:2.6.1")
+    implementation(libs.adapters)
     annotationProcessor ("androidx.room:room-compiler:2.6.1")
 
     // LiveData
