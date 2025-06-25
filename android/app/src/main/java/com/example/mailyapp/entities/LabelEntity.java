@@ -6,6 +6,8 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import androidx.room.TypeConverters;
 
+import com.example.mailyapp.models.Label;
+import com.example.mailyapp.models.User;
 import com.example.mailyapp.utils.Converters;
 
 
@@ -14,9 +16,9 @@ import java.util.List;
 
 @Entity
 public class LabelEntity {
-    @PrimaryKey(autoGenerate = true)
-    private int id;
-    private String user;
+    @PrimaryKey
+    @NonNull
+    private String id;
     private String name;
     private String color;
     @TypeConverters(Converters.class)
@@ -24,22 +26,15 @@ public class LabelEntity {
 
     public LabelEntity(String name) {
         this.name = name;
-        this.user = "you@example.com"; // Dummy or current user
-        this.color = "#FFB74D";        // Default orange shade
+        this.color = "#000000";
         this.mailIds = new ArrayList<>();
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
-    }
-    public String getUser() {
-        return user;
-    }
-    public void setUser(String user) {
-        this.user = user;
     }
     public String getName() {
         return name;
@@ -62,4 +57,13 @@ public class LabelEntity {
     public String toString() {
         return "" + name;
     }
+
+    public static LabelEntity fromLabel(Label label) {
+        LabelEntity entity = new LabelEntity(label.getName());
+        entity.setId(label.getId());
+        entity.setColor(label.getColor());
+        entity.setMailIds(label.getMailIds());
+        return entity;
+    }
+
 }

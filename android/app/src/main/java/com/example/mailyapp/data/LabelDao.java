@@ -1,8 +1,10 @@
 package com.example.mailyapp.data;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 import com.example.mailyapp.entities.LabelEntity;
@@ -12,15 +14,15 @@ import java.util.List;
 public interface LabelDao {
 
     @Query("SELECT * FROM LabelEntity")
-    List<LabelEntity> index();
+    LiveData<List<LabelEntity>> index();
 
     @Query("SELECT * FROM LabelEntity WHERE id = :id")
-    LabelEntity get(String id);
+    LiveData<LabelEntity> get(String id);
     @Query("DELETE FROM LabelEntity")
     void deleteAll();
     @Query("DELETE FROM LabelEntity WHERE id = :id")
-    void deleteById(int id);
-    @Insert
+    void deleteById(String id);
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(LabelEntity... labels);
     @Update
     void update(LabelEntity... labels);
