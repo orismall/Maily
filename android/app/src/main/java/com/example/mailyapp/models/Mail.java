@@ -11,6 +11,8 @@ public class Mail implements Serializable {
     private String date;
     private List<String> labels;
     private String type;
+    private boolean isRead;
+    private boolean isStarred;
 
     // Getters
     public String getId() { return id; }
@@ -22,6 +24,14 @@ public class Mail implements Serializable {
     public List<String> getLabels() { return labels; }
     public String getType() { return type; }
 
+    public boolean isRead() {
+        return isRead;
+    }
+
+    public boolean isStarred() {
+        return isStarred;
+    }
+
     // Setters
     public void setId(String id) { this.id = id; }
     public void setSender(String sender) { this.sender = sender; }
@@ -31,4 +41,12 @@ public class Mail implements Serializable {
     public void setDate(String date) { this.date = date; }
     public void setLabels(List<String> labels) { this.labels = labels; }
     public void setType(String type) { this.type = type; }
+
+    public void setRead(boolean read) {
+        isRead = read;
+    }
+
+    public void setStarred(boolean starred) {
+        isStarred = starred;
+    }
 }

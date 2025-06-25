@@ -3,6 +3,7 @@ package com.example.mailyapp.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +22,7 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
     // Interface to handle mail click events
     public interface OnMailClickListener {
         void onMailClick(Mail mail);
+        void onToggleStar(String mailId, boolean isStarred);
     }
 
     // Constructor for MailAdapter
@@ -72,6 +74,20 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
             holder.subjectTextView.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
         holder.itemView.setOnClickListener(v -> listener.onMailClick(mail));
+
+        if (mail.isStarred()) {
+            holder.starIcon.setImageResource(R.drawable.ic_star_filled);
+        } else {
+            holder.starIcon.setImageResource(R.drawable.ic_star);
+        }
+
+        holder.starIcon.setOnClickListener(v -> {
+            boolean newState = !mail.isStarred();
+            mail.setStarred(newState);
+            listener.onToggleStar(mail.getId(), newState);
+            notifyItemChanged(holder.getAdapterPosition());
+        });
+
     }
     // Returns the total number of mails
     @Override
@@ -88,6 +104,7 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
     // ViewHolder class holds references to the views of a single mail item
     public static class MailViewHolder extends RecyclerView.ViewHolder {
         TextView senderTextView, subjectTextView, snippetTextView, dateTextView;
+        ImageView starIcon;
 
         public MailViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -95,6 +112,7 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
             subjectTextView = itemView.findViewById(R.id.mailSubject);
             snippetTextView = itemView.findViewById(R.id.mailSnippet);
             dateTextView = itemView.findViewById(R.id.mailDate);
+            starIcon = itemView.findViewById(R.id.starIcon);
         }
     }
     public void updateData(List<Mail> newMails) {

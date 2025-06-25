@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import com.example.mailyapp.entities.MailEntity;
+import com.example.mailyapp.entities.MailFolderCrossRef;
 
 import java.util.List;
 
@@ -35,4 +36,26 @@ public interface MailDao {
     // Delete all mails
     @Query("DELETE FROM mails")
     void deleteAll();
+
+    @Query("UPDATE mails SET isStarred = :isStarred WHERE id = :mailId")
+    void updateStarredFlag(String mailId, boolean isStarred);
+
+    // 🔹 Folder connections
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insertFolderRef(MailFolderCrossRef ref);
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    void insertFolderRefs(List<MailFolderCrossRef> refs);
+
+    @Query("DELETE FROM mail_folder WHERE mailId = :mailId AND folder = :folder")
+    void removeMailFromFolder(String mailId, String folder);
+
+    @Query("DELETE FROM mail_folder WHERE mailId = :mailId")
+    void removeMailFromAllFolders(String mailId);
+
+    @Query("SELECT * FROM mails WHERE id IN (SELECT mailId FROM mail_folder WHERE folder = :folder) ORDER BY date DESC")
+    LiveData<List<MailEntity>> getMailsByFolder(String folder);
+
+    @Query("SELECT * FROM mails WHERE isStarred = 1 ORDER BY date DESC")
+    LiveData<List<MailEntity>> getStarredMails();
 }

@@ -28,6 +28,7 @@ import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.data.AppDatabase;
 import com.example.mailyapp.data.LabelDao;
 import com.example.mailyapp.entities.LabelEntity;
+import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.models.Mail;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
@@ -168,60 +169,60 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             // TODO: handle inbox selection
             LinearLayout navInbox = findViewById(R.id.nav_inbox);
             currentFolder = "inbox";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navInbox);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_starred).setOnClickListener(v -> {
             // TODO: handle starred
             LinearLayout navStarred = findViewById(R.id.nav_starred);
             currentFolder = "starred";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navStarred);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_sent).setOnClickListener(v -> {
             // TODO: handle sent
             LinearLayout navSent = findViewById(R.id.nav_sent);
             currentFolder = "sent";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navSent);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_drafts).setOnClickListener(v -> {
             // TODO: handle drafts
             LinearLayout navDrafts = findViewById(R.id.nav_drafts);
             currentFolder = "drafts";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navDrafts);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_spam).setOnClickListener(v -> {
             // TODO: handle spam
             LinearLayout navSpam = findViewById(R.id.nav_spam);
             currentFolder = "spam";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navSpam);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_trash).setOnClickListener(v -> {
             // TODO: handle trash
             LinearLayout navTrash = findViewById(R.id.nav_trash);
             currentFolder = "trash";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navTrash);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         // Temporary hardcoded session
         getSharedPreferences("session", MODE_PRIVATE)
                 .edit()
-                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU4MTE3ZmQzNjkxMDAxN2JlMWIxYmYiLCJpYXQiOjE3NTA4NDUzNzIsImV4cCI6MTc1MDg1MjU3Mn0.tN-m2PATkxXcCpAtjwTwHg0j2Ty8l_Pfz56ISkE-Y_U")
+                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA4NjU0MTEsImV4cCI6MTc1MDg3MjYxMX0.NMZzHhXDXzXKT5BbqCDg6CilVaqu_wpZn9CO3S6Ko7Y")
                 .putString("user_id", "68592a46dae5342bc9d3d5fb")
                 .apply();
 
@@ -231,8 +232,18 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
 
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
         mailViewModel.fetchFolder(currentFolder, 1);
-        mailViewModel.getRemoteMails().observe(this, mails -> {
-            Log.d("InboxActivity", "🚨 Received " + (mails != null ? mails.size() : "null") + " mails");
+
+        mailViewModel.getLocalMailsByFolder(currentFolder).observe(this, entities -> {
+            if (entities == null) return;
+
+            List<Mail> mails = new ArrayList<>();
+            for (MailEntity entity : entities) {
+                mails.add(entity.toModel());
+            }
+
+            //mailViewModel.getRemoteMails().observe(this, mails -> {
+            //Log.d("InboxActivity", " Received " + (mails != null ? mails.size() : "null") + " mails");
+
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
                 mailRecyclerView.setAdapter(mailAdapter);
@@ -285,6 +296,11 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         startActivity(intent);
     }
 
+    @Override
+    public void onToggleStar(String mailId, boolean isStarred) {
+        mailViewModel.updateStarredFlag(mailId, isStarred);
+    }
+
     private void markSelectedItem(View selected) {
         if (currentSelectedNavItem != null) {
             currentSelectedNavItem.setSelected(false); // Unmark previous
@@ -309,6 +325,26 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         listView.setLayoutParams(params);
         listView.requestLayout();
     }
+
+    private void loadMailsForFolder(String folderName) {
+        mailViewModel.getLocalMailsByFolder(folderName).observe(this, entities -> {
+            if (entities == null) return;
+
+            List<Mail> mails = new ArrayList<>();
+            for (MailEntity entity : entities) {
+                mails.add(entity.toModel());
+            }
+
+            if (mailAdapter == null) {
+                mailAdapter = new MailAdapter(mails, this);
+                mailRecyclerView.setAdapter(mailAdapter);
+            } else {
+                mailAdapter.updateData(mails);
+            }
+        });
+    }
+
+
 
 
 }
