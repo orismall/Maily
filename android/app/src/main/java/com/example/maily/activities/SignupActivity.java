@@ -12,16 +12,18 @@ import android.widget.*;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.maily.R;
+import com.example.maily.models.User;
+import com.example.maily.viewmodels.UserViewModel;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
 
-public class SignupActivity extends AppCompatActivity {
+public class SignupActivity extends BaseActivity {
 
     private EditText firstNameInput, lastNameInput, emailInput, passwordInput, confirmPasswordInput, birthDateInput;
     private Spinner genderSpinner;
@@ -30,6 +32,7 @@ public class SignupActivity extends AppCompatActivity {
 
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private UserViewModel userViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +83,20 @@ public class SignupActivity extends AppCompatActivity {
 
         // Register button click
         registerButton.setOnClickListener(v -> handleRegistration());
+        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        userViewModel.getRegistrationSuccess().observe(this, isSuccess -> {
+            if (isSuccess != null && isSuccess) {
+                Intent intent = new Intent(this, LoginActivity.class);
+                intent.putExtra("showSuccessToast", true);
+                startActivity(intent);
+                finish();
+            }
+        });
+
+        userViewModel.getErrorMessage().observe(this, error -> {
+            if (error != null) {
+                showErrorToast(error);            }
+        });
     }
 
     private void setupGenderSpinner() {
@@ -132,7 +149,15 @@ public class SignupActivity extends AppCompatActivity {
         try {
             InputStream inputStream = getContentResolver().openInputStream(imageUri);
             byte[] bytes = getBytes(inputStream);
-            return Base64.encodeToString(bytes, Base64.DEFAULT);
+
+            String mimeType = getContentResolver().getType(imageUri);
+            if (mimeType == null) {
+                mimeType = "image/jpeg";
+            }
+
+            String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP); // NO_WRAP כדי לא ליצור שורות חדשות
+            return "data:" + mimeType + ";base64," + base64;
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -159,12 +184,9 @@ public class SignupActivity extends AppCompatActivity {
         String confirmPassword = confirmPasswordInput.getText().toString().trim();
         String gender = genderSpinner.getSelectedItem().toString();
         String birthDate = birthDateInput.getText().toString().trim();
-        if (selectedImageUri != null) {
-            String image = imageUriToBase64(selectedImageUri);
-        }
+        String image = selectedImageUri != null ? imageUriToBase64(selectedImageUri) : null;
 
-        Intent i = new Intent(this, LoginActivity.class);
-        startActivity(i);
-        finish();
+        User user = new User(firstName, lastName, email, password, confirmPassword, gender, birthDate, image);
+        userViewModel.registerUser(user);
     }
 }
