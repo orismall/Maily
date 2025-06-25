@@ -155,7 +155,7 @@ public class SignupActivity extends BaseActivity {
                 mimeType = "image/jpeg";
             }
 
-            String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP); // NO_WRAP כדי לא ליצור שורות חדשות
+            String base64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
             return "data:" + mimeType + ";base64," + base64;
 
         } catch (Exception e) {
@@ -187,6 +187,6 @@ public class SignupActivity extends BaseActivity {
         String image = selectedImageUri != null ? imageUriToBase64(selectedImageUri) : null;
 
         User user = new User(firstName, lastName, email, password, confirmPassword, gender, birthDate, image);
-        userViewModel.registerUser(this, user);
+        userViewModel.registerUser(user);
     }
 }

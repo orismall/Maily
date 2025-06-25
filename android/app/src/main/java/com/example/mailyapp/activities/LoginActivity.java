@@ -67,7 +67,7 @@ public class LoginActivity extends BaseActivity {
 
         // Create request and call ViewModel
         LoginRequest request = new LoginRequest(email, password);
-        userViewModel.loginUser(this, request);
+        userViewModel.loginUser( request);
 
     }
 }

@@ -7,6 +7,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.text.ParseException;
+
 import com.example.mailyapp.R;
 import com.example.mailyapp.models.Mail;
 
@@ -61,7 +66,24 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         holder.snippetTextView.setText(snippet != null ? snippet : "");
 
         String date = mail.getDate();
-        holder.dateTextView.setText(date != null ? date : "");
+        if (date != null) {
+            try {
+                SimpleDateFormat serverFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+                serverFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                Date parsedDate = serverFormat.parse(date);
+
+                SimpleDateFormat israeliFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm", new Locale("he", "IL"));
+                israeliFormat.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Jerusalem"));
+                String formattedDate = israeliFormat.format(parsedDate);
+
+                holder.dateTextView.setText(formattedDate);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                holder.dateTextView.setText(date);
+            }
+        } else {
+            holder.dateTextView.setText("");
+        }
 
 
         // Make subject bold if mail is considered unread (label -1)

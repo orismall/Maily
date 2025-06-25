@@ -38,7 +38,8 @@
             android:layout_marginBottom="16dp"
             android:padding="14dp"
             android:background="@drawable/input_box"
-            android:textColorHint="#757575" />
+            android:textColorHint="#757575"
+            android:textCursorDrawable="@drawable/custom_cursor"/>
 
         <EditText
             android:id="@+id/lastNameInput"
@@ -49,7 +50,8 @@
             android:layout_marginBottom="16dp"
             android:padding="14dp"
             android:background="@drawable/input_box"
-            android:textColorHint="#757575" />
+            android:textColorHint="#757575"
+            android:textCursorDrawable="@drawable/custom_cursor"/>
 
         <EditText
             android:id="@+id/emailInput"
@@ -61,7 +63,8 @@
             android:layout_marginBottom="16dp"
             android:padding="14dp"
             android:background="@drawable/input_box"
-            android:textColorHint="#757575" />
+            android:textColorHint="#757575"
+            android:textCursorDrawable="@drawable/custom_cursor"/>
 
         <EditText
             android:id="@+id/passwordInput"
@@ -73,7 +76,8 @@
             android:layout_marginBottom="16dp"
             android:padding="14dp"
             android:background="@drawable/input_box"
-            android:textColorHint="#757575" />
+            android:textColorHint="#757575"
+            android:textCursorDrawable="@drawable/custom_cursor"/>
 
         <EditText
             android:id="@+id/confirmPasswordInput"
@@ -85,7 +89,8 @@
             android:layout_marginBottom="16dp"
             android:padding="14dp"
             android:background="@drawable/input_box"
-            android:textColorHint="#757575" />
+            android:textColorHint="#757575"
+            android:textCursorDrawable="@drawable/custom_cursor"/>
 
         <Spinner
             android:id="@+id/genderSpinner"
