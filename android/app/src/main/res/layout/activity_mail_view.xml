@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <!-- Scrollable content -->
+    <ScrollView
+        android:id="@+id/mailScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/bottomButtons">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Top bar -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp">
+
+                <ImageButton
+                    android:id="@+id/btnBack"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentStart="true"
+                    android:src="@drawable/ic_back"
+                    android:contentDescription="Back"
+                    android:background="?attr/selectableItemBackgroundBorderless" />
+
+                <LinearLayout
+                    android:id="@+id/rightButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageButton
+                        android:id="@+id/btnTrash"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_trash"
+                        android:contentDescription="Delete"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+
+                    <ImageButton
+                        android:id="@+id/btnSpam"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_spam"
+                        android:contentDescription="Spam"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+
+                    <ImageButton
+                        android:id="@+id/btnReadUnread"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_read_unread"
+                        android:contentDescription="Read/Unread"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+
+                    <ImageButton
+                        android:id="@+id/btnMoreTop"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_dots"
+                        android:contentDescription="More"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+                </LinearLayout>
+            </RelativeLayout>
+
+            <!-- Subject + star -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/mailSubject"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Subject"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    app:fontFamily="@font/roboto" />
+
+                <ImageButton
+                    android:id="@+id/btnStar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_star"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Star" />
+            </LinearLayout>
+
+            <!-- Sender + reply + more -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/mailFrom"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="sender@example.com"
+                    android:textSize="16sp"
+                    android:textColor="#000000"
+                    app:fontFamily="@font/roboto" />
+
+                <ImageButton
+                    android:id="@+id/btnReplyInline"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_reply"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Reply" />
+
+                <ImageButton
+                    android:id="@+id/btnMoreInline"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_dots"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="More options" />
+            </LinearLayout>
+
+            <!-- Email body -->
+            <TextView
+                android:id="@+id/mailBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Email body goes here"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"
+                android:paddingHorizontal="12dp"
+                android:paddingBottom="24dp"
+                android:textColor="#000000"
+                app:fontFamily="@font/roboto" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Fixed bottom buttons -->
+    <LinearLayout
+        android:id="@+id/bottomButtons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="@android:color/white"
+        android:gravity="center">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Reply"
+            android:textColor="@android:color/black"
+            android:backgroundTint="@color/light_grey"
+            app:cornerRadius="24dp"
+            android:layout_marginEnd="8dp"
+            android:textAllCaps="false"
+            app:icon="@drawable/ic_reply"
+            app:iconGravity="textStart"
+            app:iconTint="@android:color/black"
+            app:fontFamily="@font/roboto" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnForward"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Forward"
+            android:textColor="@android:color/black"
+            android:backgroundTint="@color/light_grey"
+            app:cornerRadius="24dp"
+            android:textAllCaps="false"
+            app:icon="@drawable/ic_send"
+            app:iconGravity="textStart"
+            app:iconTint="@android:color/black"
+            app:fontFamily="@font/roboto" />
+    </LinearLayout>
+</RelativeLayout>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Main content wrapped in FrameLayout so we can overlay the Compose button -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Top App Bar (Toolbar) -->
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#ADACAC"
+                android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+                <androidx.appcompat.widget.SearchView
+                    android:id="@+id/searchView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:iconifiedByDefault="false"
+                    android:queryHint="Search mail..." />
+            </androidx.appcompat.widget.Toolbar>
+
+            <!-- Mail list -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/mailRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp" />
+        </LinearLayout>
+
+        <!-- Compose button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/fabCompose"
+            android:layout_width="wrap_content"
+            android:layout_height="70dp"
+            android:minHeight="56dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:text="@string/compose"
+            android:textColor="@android:color/black"
+            android:backgroundTint="@color/light_grey"
+            app:cornerRadius="32dp"
+            app:icon="@drawable/ic_compose_pencil"
+            app:iconTint="@android:color/black"
+            app:iconPadding="8dp"
+            android:textAllCaps="false"
+            android:letterSpacing="0.01"
+            app:iconGravity="textStart"
+            android:paddingTop="12dp"
+            android:textSize="16sp"
+            android:paddingBottom="12dp"
+            app:fontFamily="@font/roboto"
+            android:textStyle="bold"/>
+
+
+    </FrameLayout>
+
+    <!-- Navigation drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigation_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="#FFFFFF"
+        app:headerLayout="@layout/nav_header"
+        app:itemTextAppearance="@style/NavigationDrawerText">
+
+        <!-- Embed your custom drawer layout -->
+        <include layout="@layout/activity_menu_with_labels" />
+    </com.google.android.material.navigation.NavigationView>
+
+
+</androidx.drawerlayout.widget.DrawerLayout>
