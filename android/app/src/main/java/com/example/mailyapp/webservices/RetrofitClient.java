@@ -1,5 +1,7 @@
 package com.example.mailyapp.webservices;
 
+import static com.example.mailyapp.MyApplication.context;
+
 import android.content.Context;
 
 import com.example.mailyapp.models.Mail;
@@ -29,11 +31,15 @@ public class RetrofitClient {
                     .create();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl("http://10.0.2.2:5001/")
+                    .baseUrl("http://10.0.2.2:5001/api/")
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .client(client)
                     .build();
         }
         return retrofit;
+    }
+
+    public static UserAPI getUserAPI(Context context) {
+        return getInstance(context).create(UserAPI.class);
     }
 }
