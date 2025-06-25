@@ -14,7 +14,7 @@ import com.example.mailyapp.utils.Converters;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
+@Entity(tableName = "labels")
 public class LabelEntity {
     @PrimaryKey
     @NonNull
