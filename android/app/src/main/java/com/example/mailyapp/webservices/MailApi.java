@@ -46,7 +46,19 @@ public interface MailApi {
 
     // Send a new mail
     @POST("mails")
-    Call<Void> sendMail(@Body Mail mail);
+    Call<Mail> sendMail(@Body Mail mail);
+
+    @POST("/api/drafts")
+    Call<Mail> createDraft(@Body Mail draft);
+
+    @POST("/api/drafts/{id}/send")
+    Call<Mail> sendDraftAsMail(@Path("id") String draftId);
+
+    @POST("/api/drafts/{id}/send")
+    Call<Mail> sendDraftAsMailWithResponse(@Path("id") String draftId);
+
+    @PATCH("/api/drafts/{id}")
+    Call<Mail> updateDraft(@Path("id") String id, @Body Mail draft);
 
     // Update mail flags (read/starred)
     @PATCH("mails/{id}")

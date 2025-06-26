@@ -36,6 +36,9 @@ public class MailViewActivity extends AppCompatActivity {
     private ImageButton backButton, trashButton, spamButton, readUnreadButton, moreOptionsButtonTop;
     private ImageButton replyInlineButton, moreOptionsButtonInline, starButton;
     private MaterialButton replyButton, forwardButton;
+    private Mail mail;
+    private MailViewModel viewModel;
+
 
     @SuppressLint("NonConstantResourceId")
     @Override
@@ -46,6 +49,8 @@ public class MailViewActivity extends AppCompatActivity {
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
 
         currentMail = (Mail) getIntent().getSerializableExtra("mail");
+
+        viewModel = new ViewModelProvider(this).get(MailViewModel.class);
 
         // Bind views
         backButton = findViewById(R.id.btnBack);
@@ -63,12 +68,34 @@ public class MailViewActivity extends AppCompatActivity {
         forwardButton = findViewById(R.id.btnForward);
 
         // Load mail data
-        if (currentMail != null) {
-            subjectTextView.setText(currentMail.getSubject());
-            fromTextView.setText(currentMail.getSender());
-            bodyTextView.setText(currentMail.getContent());
+        mail = (Mail) getIntent().getSerializableExtra("mail");
+        if (mail != null) {
+            subjectTextView.setText(mail.getSubject());
+            fromTextView.setText(mail.getSender());
+            bodyTextView.setText(mail.getContent());
+
+            if (!mail.isRead()) {
+                mail.setRead(true);
+                viewModel.updateReadFlag(mail.getId(), true);
+            }
         }
 
+        readUnreadButton.setOnClickListener(v -> {
+            if (mail == null) return;
+
+            boolean newReadStatus = !mail.isRead();
+            mail.setRead(newReadStatus);
+            viewModel.updateReadFlag(mail.getId(), newReadStatus);
+
+            if (!newReadStatus) {
+                Toast.makeText(this, "Mark as unread", Toast.LENGTH_SHORT).show();
+                finish();
+            } else {
+                Toast.makeText(this, "Mark as read", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Basic back button behavior
         backButton.setOnClickListener(v -> finish());
         moreOptionsButtonTop.setOnClickListener(v -> showLabelPopup());
 
