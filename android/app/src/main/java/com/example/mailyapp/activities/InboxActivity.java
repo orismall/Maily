@@ -310,13 +310,16 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             @Override
             public boolean onQueryTextChange(String newText) {
                 if (newText.isEmpty()) {
-                    loadMailsForFolder(currentFolder); // restore original folder view
+                    loadMailsForFolder(currentFolder);
                 } else {
-                    performSearch(newText); // live search as user types
+                    performSearch(newText);
                 }
                 return true;
             }
+
         });
+
+
 
         MaterialButton fabCompose = findViewById(R.id.fabCompose);
         fabCompose.setOnClickListener(v -> {
@@ -375,18 +378,13 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     }
 
     private void loadMailsForFolder(String folderName) {
-        if (currentMailLiveData != null) {
-            currentMailLiveData.removeObservers(this);
-            currentMailLiveData = null;
-        }
-        currentMailLiveData = mailViewModel.getLocalMailsByFolder(folderName);
-        currentMailLiveData.observe(this, entities -> {
+        mailViewModel.getLocalMailsByFolder(folderName).observe(this, entities -> {
             if (entities == null) return;
 
             List<Mail> mails = new ArrayList<>();
             for (MailEntity entity : entities) {
-                 mails.add(entity.toModel());
-                }
+                mails.add(entity.toModel());
+            }
 
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
@@ -394,9 +392,11 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             } else {
                 mailAdapter.updateData(mails);
             }
+
             mailAdapter.setSearchQuery(null);
         });
     }
+
 
     private void performSearch(String query) {
         mailViewModel.searchMails(query).observe(this, entities -> {
@@ -417,5 +417,4 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             mailAdapter.setSearchQuery(query);
         });
     }
-
 }
