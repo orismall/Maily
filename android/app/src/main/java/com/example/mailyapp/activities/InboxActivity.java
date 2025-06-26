@@ -303,16 +303,24 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // handle search submit
-                return false;
+                performSearch(query); // trigger search on submit
+                return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                // filter mails while typing
-                return false;
+                if (newText.isEmpty()) {
+                    loadMailsForFolder(currentFolder);
+                } else {
+                    performSearch(newText);
+                }
+                return true;
             }
+
         });
+
+
+
         MaterialButton fabCompose = findViewById(R.id.fabCompose);
         fabCompose.setOnClickListener(v -> {
             Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
@@ -370,18 +378,13 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     }
 
     private void loadMailsForFolder(String folderName) {
-        if (currentMailLiveData != null) {
-            currentMailLiveData.removeObservers(this);
-            currentMailLiveData = null;
-        }
-        currentMailLiveData = mailViewModel.getLocalMailsByFolder(folderName);
-        currentMailLiveData.observe(this, entities -> {
+        mailViewModel.getLocalMailsByFolder(folderName).observe(this, entities -> {
             if (entities == null) return;
 
             List<Mail> mails = new ArrayList<>();
             for (MailEntity entity : entities) {
-                 mails.add(entity.toModel());
-                }
+                mails.add(entity.toModel());
+            }
 
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
@@ -389,7 +392,29 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             } else {
                 mailAdapter.updateData(mails);
             }
+
+            mailAdapter.setSearchQuery(null);
         });
     }
 
+
+    private void performSearch(String query) {
+        mailViewModel.searchMails(query).observe(this, entities -> {
+            if (entities == null) return;
+
+            List<Mail> mails = new ArrayList<>();
+            for (MailEntity entity : entities) {
+                mails.add(entity.toModel());
+            }
+
+            if (mailAdapter == null) {
+                mailAdapter = new MailAdapter(mails, this);
+                mailRecyclerView.setAdapter(mailAdapter);
+            } else {
+                mailAdapter.updateData(mails);
+            }
+
+            mailAdapter.setSearchQuery(query);
+        });
+    }
 }

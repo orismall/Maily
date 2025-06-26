@@ -356,4 +356,9 @@ public class MailRepository {
     public LiveData<List<MailEntity>> getMailsByLabel(String labelId) {
         return mailDao.getMailsByLabel(labelId);
     }
+
+    public LiveData<List<MailEntity>> searchMails(String query) {
+        return mailDao.searchMails(query);
+    }
+
 }
