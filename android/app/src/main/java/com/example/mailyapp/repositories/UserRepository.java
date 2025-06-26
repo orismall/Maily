@@ -26,4 +26,7 @@ public class UserRepository {
     public void loginUser(LoginRequest request, Callback<LoginResponse> callback) {
         userAPI.loginUser(request).enqueue(callback);
     }
+    public void getUserById(String userId, Callback<User> callback) {
+        userAPI.getUserById(userId).enqueue(callback);
+    }
 }

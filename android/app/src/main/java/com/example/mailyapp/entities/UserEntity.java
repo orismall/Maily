@@ -1,14 +1,14 @@
 package com.example.mailyapp.entities;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "users")
-public class User {
-
+public class UserEntity {
+    @NonNull
     @PrimaryKey
-    public int id;
-
     public String email;
     public String firstName;
     public String lastName;
@@ -16,9 +16,8 @@ public class User {
     public String birthdate;
     public String avatar;
 
-    public User(int id, String email, String firstName, String lastName,
-                String gender, String birthdate, String avatar) {
-        this.id = id;
+    public UserEntity(String email, String firstName, String lastName,
+                      String gender, String birthdate, String avatar) {
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -26,5 +25,13 @@ public class User {
         this.birthdate = birthdate;
         this.avatar = avatar;
     }
-
+    @Ignore
+    public UserEntity(String email, String firstName, String lastName, String avatar) {
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.gender = null;
+        this.birthdate = null;
+        this.avatar = avatar;
+    }
 }

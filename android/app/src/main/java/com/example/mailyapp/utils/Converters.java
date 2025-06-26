@@ -2,6 +2,8 @@ package com.example.mailyapp.utils;
 
 import androidx.room.TypeConverter;
 
+import com.example.mailyapp.entities.UserEntity;
+import com.example.mailyapp.models.User;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
