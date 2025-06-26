@@ -204,4 +204,57 @@ public class LabelRepository {
         entity.setMailIds(label.getMailIds() != null ? label.getMailIds() : new ArrayList<>());
         return entity;
     }
+
+    public void addMailToLabel(String mailId, String labelId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        LabelApi api = RetrofitClient.getInstance(application).create(LabelApi.class);
+        api.addMailToLabel(mailId, labelId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    executorService.execute(() -> {
+                        LabelEntity label = labelDao.getNow(labelId);
+                        if (label != null && !label.getMailIds().contains(mailId)) {
+                            label.getMailIds().add(mailId);
+                            labelDao.insert(label); // Save updated label
+                        }
+                        onSuccess.run();
+                    });
+                } else {
+                    onFailure.accept(new Exception("Failed: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
+
+    public void removeMailFromLabel(String mailId, String labelId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        LabelApi api = RetrofitClient.getInstance(application).create(LabelApi.class);
+        api.removeMailFromLabel(mailId, labelId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    executorService.execute(() -> {
+                        LabelEntity label = labelDao.getNow(labelId);
+                        if (label != null && label.getMailIds().contains(mailId)) {
+                            label.getMailIds().remove(mailId);
+                            labelDao.insert(label);
+                        }
+                        onSuccess.run();
+                    });
+                } else {
+                    onFailure.accept(new Exception("Failed: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
+
 }

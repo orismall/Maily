@@ -23,4 +23,11 @@ public interface LabelApi {
 
     @DELETE("labels/{id}")
     Call<Void> deleteLabel(@Path("id") String id);
+
+    @POST("mails/{mailId}/labels/{labelId}")
+    Call<Void> addMailToLabel(@Path("mailId") String mailId, @Path("labelId") String labelId);
+
+    @DELETE("mails/{mailId}/labels/{labelId}")
+    Call<Void> removeMailFromLabel(@Path("mailId") String mailId, @Path("labelId") String labelId);
+
 }

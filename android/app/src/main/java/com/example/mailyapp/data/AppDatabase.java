@@ -11,7 +11,7 @@ import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.entities.MailFolderCrossRef;
 import com.example.mailyapp.utils.Converters;
 
-@Database(entities = {MailEntity.class, LabelEntity.class, MailFolderCrossRef.class}, version = 4, exportSchema = false)
+@Database(entities = {MailEntity.class, LabelEntity.class, MailFolderCrossRef.class}, version = 5, exportSchema = false)
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase {
 

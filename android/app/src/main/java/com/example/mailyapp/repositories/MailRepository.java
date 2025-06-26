@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -94,6 +95,7 @@ public class MailRepository {
                 break;
             default:
                 Log.e("MailRepository", "Unknown folder: " + folder);
+                liveData.postValue(null);
                 return;
         }
 
@@ -102,18 +104,8 @@ public class MailRepository {
             public void onResponse(Call<List<Mail>> call, Response<List<Mail>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Mail> mailList = response.body();
-                    Log.d("MailRepository", "Fetched " + folder + " mails: " + mailList.size());
+                    Log.d("MailRepository", "Fetched " + folder + ": " + mailList.size() + " mails");
 
-                    liveData.postValue(mailList);
-
-                    for (Mail mail : mailList) {
-                        Log.d("MailRepository", "ID: " + mail.getId() +
-                                ", Sender: " + mail.getSender() +
-                                ", Subject: " + mail.getSubject() +
-                                ", Content: " + mail.getContent());
-                    }
-
-                    // Convert to MailEntity
                     List<MailEntity> entityList = new ArrayList<>();
                     List<MailFolderCrossRef> refList = new ArrayList<>();
 
@@ -130,48 +122,62 @@ public class MailRepository {
                                 mail.isRead(),
                                 mail.isStarred()
                         ));
+
                         refList.add(new MailFolderCrossRef(mail.getId(), folder));
                     }
 
-                    insertAll(entityList);
-                    insertFolderRefs(refList);
+                    executorService.execute(() -> {
+                        // Clear all mappings for this folder (better than per-mail deletes)
+                        mailDao.removeAllMappingsForFolder(folder);
+
+                        mailDao.insertAll(entityList);       // Upsert mails
+                        mailDao.insertFolderRefs(refList);   // Insert new folder mappings
+                    });
+
+
+                    liveData.postValue(mailList);
                 } else {
-                    Log.e("MailRepository", "Failed to fetch " + folder + ": " + response.code());
+                    Log.e("MailRepository", "API error for " + folder + ": " + response.code());
+                    liveData.postValue(null);
                 }
             }
 
             @Override
             public void onFailure(Call<List<Mail>> call, Throwable t) {
                 Log.e("MailRepository", "Network error: " + t.getMessage(), t);
+                liveData.postValue(null);
             }
         });
-
-
     }
+
+
 
     public void refreshAllMailsFromApi(Runnable onComplete) {
         List<String> folders = Arrays.asList("inbox", "sent", "starred", "drafts", "spam", "trash");
         AtomicInteger remaining = new AtomicInteger(folders.size());
 
+        // 💥 Optional: wipe all mail and folder data before sync
+        executorService.execute(() -> {
+            mailDao.deleteAll(); // Clear mails and folder mappings
+        });
+
         for (String folder : folders) {
             MutableLiveData<List<Mail>> tempLiveData = new MutableLiveData<>();
 
-            // Observe once, then remove the observer
             tempLiveData.observeForever(new Observer<List<Mail>>() {
                 @Override
                 public void onChanged(List<Mail> mails) {
-                    // When data arrives, mark this folder as done
                     tempLiveData.removeObserver(this);
-
                     if (remaining.decrementAndGet() == 0) {
-                        onComplete.run();
+                        onComplete.run(); // All folders processed
                     }
                 }
             });
 
-            fetchMailsByFolder(folder, 1, tempLiveData);
+            fetchMailsByFolder(folder, 1, tempLiveData); // Will reinsert updated mails + folders
         }
     }
+
 
 
 
@@ -226,4 +232,56 @@ public class MailRepository {
             return mailDao.getMailsByFolder(folder);
         }
     }
+
+    public void moveToTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+        api.deleteMail(mailId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    onSuccess.run();
+                } else {
+                    onFailure.accept(new Exception("Trash failed with code: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
+
+    public void addLabelToMailLocally(String mailId, String labelId) {
+        executorService.execute(() -> {
+            MailEntity mail = mailDao.getNow(mailId);
+            if (mail != null) {
+                List<String> labels = new ArrayList<>(mail.getLabels() != null ? mail.getLabels() : new ArrayList<>());
+                if (!labels.contains(labelId)) {
+                    labels.add(labelId);
+                    mail.setLabels(labels);
+                    mailDao.insert(mail); // REPLACE will update existing row
+                }
+            }
+        });
+    }
+
+    public void removeLabelFromMailLocally(String mailId, String labelId) {
+        executorService.execute(() -> {
+            MailEntity mail = mailDao.getNow(mailId);
+            if (mail != null && mail.getLabels() != null) {
+                List<String> labels = new ArrayList<>(mail.getLabels());
+                if (labels.contains(labelId)) {
+                    labels.remove(labelId);
+                    mail.setLabels(labels);
+                    mailDao.insert(mail);
+                }
+            }
+        });
+    }
+
+    public LiveData<List<MailEntity>> getMailsByLabel(String labelId) {
+        return mailDao.getMailsByLabel(labelId);
+    }
+
 }
