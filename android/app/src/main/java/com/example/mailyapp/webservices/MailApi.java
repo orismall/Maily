@@ -46,7 +46,7 @@ public interface MailApi {
 
     // Send a new mail
     @POST("mails")
-    Call<Void> sendMail(@Body Mail mail);
+    Call<Mail> sendMail(@Body Mail mail);
 
     // Update mail flags (read/starred)
     @PATCH("mails/{id}")

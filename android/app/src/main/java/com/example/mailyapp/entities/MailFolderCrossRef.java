@@ -4,12 +4,12 @@ import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "mail_folder")
+@Entity(
+        tableName = "mail_folder",
+        primaryKeys = {"mailId", "folder"}
+)
+
 public class MailFolderCrossRef {
-
-    @PrimaryKey(autoGenerate = true)
-    public int id;
-
     @NonNull
     public String mailId;
 

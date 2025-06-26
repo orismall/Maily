@@ -175,7 +175,7 @@ public class MailRepository {
 
 
 
-    public void sendMail(Mail mail, Callback<Void> callback) {
+    public void sendMail(Mail mail, Callback<Mail> callback) {
         MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
         mailApi.sendMail(mail).enqueue(callback);
     }
@@ -199,6 +199,27 @@ public class MailRepository {
             });
         });
     }
+
+    public void updateReadFlag(String mailId, boolean isRead) {
+        executorService.execute(() -> {
+            mailDao.updateReadFlag(mailId, isRead);
+
+            MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
+            MailFlagUpdate update = new MailFlagUpdate(null, isRead); // null במקום isStarred
+            mailApi.updateMailFlags(mailId, update).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    Log.d("MailRepository", "isRead updated on server for " + mailId);
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    Log.e("MailRepository", "Failed to update isRead on server", t);
+                }
+            });
+        });
+    }
+
 
 
     public void insertFolderRef(String mailId, String folder) {
@@ -225,5 +246,9 @@ public class MailRepository {
         } else {
             return mailDao.getMailsByFolder(folder);
         }
+    }
+
+    public LiveData<List<MailEntity>> getStarredMails() {
+        return mailDao.getStarredMails();
     }
 }

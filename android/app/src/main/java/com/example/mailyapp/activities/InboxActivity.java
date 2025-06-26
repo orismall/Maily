@@ -57,6 +57,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private MailViewModel mailViewModel;
     private String currentFolder = "inbox";
 
+    private androidx.lifecycle.LiveData<List<MailEntity>> currentMailLiveData;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -342,7 +344,13 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     }
 
     private void loadMailsForFolder(String folderName) {
-        mailViewModel.getLocalMailsByFolder(folderName).observe(this, entities -> {
+        if (currentMailLiveData != null) {
+            currentMailLiveData.removeObservers(this); // ביטול הצפייה הקודמת
+        }
+
+
+        currentMailLiveData = mailViewModel.getLocalMailsByFolder(folderName);
+        currentMailLiveData.observe(this, entities -> {
             if (entities == null) return;
 
             List<Mail> mails = new ArrayList<>();
