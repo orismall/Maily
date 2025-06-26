@@ -87,7 +87,7 @@ public class SignupActivity extends BaseActivity {
         userViewModel.getRegistrationSuccess().observe(this, isSuccess -> {
             if (isSuccess != null && isSuccess) {
                 Intent intent = new Intent(this, LoginActivity.class);
-                intent.putExtra("showSuccessToast", true);
+                intent.putExtra("signed_up", true);
                 startActivity(intent);
                 finish();
             }
@@ -96,6 +96,12 @@ public class SignupActivity extends BaseActivity {
         userViewModel.getErrorMessage().observe(this, error -> {
             if (error != null) {
                 showErrorToast(error);            }
+        });
+        TextView signInLink = findViewById(R.id.signInLink);
+
+        signInLink.setOnClickListener(v -> {
+            Intent i = new Intent(this, LoginActivity.class);
+            startActivity(i);
         });
     }
 

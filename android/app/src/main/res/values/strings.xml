@@ -36,6 +36,8 @@
     <string name="create_your_maily_account">Create your Maily account</string>
     <string name="selected_image">Selected Image</string>
     <string name="BaseUrl">http://10.0.2.2:5001/api/</string>
+    <string name="already_have_an_account">Already have an account?</string>
+    <string name="sign_in">Sign in</string>
 
 
 </resources>

@@ -15,4 +15,6 @@ public interface UserDao {
 
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     UserEntity getUserByEmail(String email);
-}
+
+    @Query("DELETE FROM users")
+    void deleteAll();}

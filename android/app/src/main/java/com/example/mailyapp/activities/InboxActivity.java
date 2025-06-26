@@ -2,11 +2,9 @@ package com.example.mailyapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -60,7 +58,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         setContentView(R.layout.activity_inbox);
 
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
-                        "MailyDB").allowMainThreadQueries().build();
+                "MailyDB").allowMainThreadQueries().build();
         labelDao = db.labelDao();
 
         // Setup Toolbar (upperBar)
@@ -225,7 +223,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
         mailViewModel.fetchFolder(currentFolder, 1);
         mailViewModel.getRemoteMails().observe(this, mails -> {
-            Log.d("InboxActivity", "🚨 Received " + (mails != null ? mails.size() : "null") + " mails");
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
                 mailRecyclerView.setAdapter(mailAdapter);
@@ -258,6 +255,36 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
             startActivity(intent);
         });
+
+        // Logout button logic
+        LinearLayout logoutButton = navigationView.findViewById(R.id.nav_logout);
+
+        if (logoutButton != null) {
+            logoutButton.setOnClickListener(v -> {
+                new androidx.appcompat.app.AlertDialog.Builder(InboxActivity.this)
+                        .setTitle("Logout")
+                        .setMessage("Are you sure you want to log out?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+
+                            // Clear SharedPreferences
+                            getSharedPreferences("session", MODE_PRIVATE).edit().clear().apply();
+
+                            // Clear Room Database
+                            AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "MailyDB")
+                                    .allowMainThreadQueries()
+                                    .build();
+                            db.userDao().deleteAll();
+
+                            // Go to LoginActivity with flag
+                            Intent intent = new Intent(InboxActivity.this, LoginActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            intent.putExtra("logged_out", true);
+                            startActivity(intent);
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
+        }
 
     }
 

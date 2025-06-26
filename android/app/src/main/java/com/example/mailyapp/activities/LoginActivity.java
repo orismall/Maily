@@ -24,9 +24,15 @@ public class LoginActivity extends BaseActivity {
 
         TextView registerLink = findViewById(R.id.registerLink);
 
-        boolean showToast = getIntent().getBooleanExtra("showSuccessToast", false);
-        if (showToast) {
+        boolean SignedUp = getIntent().getBooleanExtra("signed_up", false);
+        boolean loggedOut = getIntent().getBooleanExtra("logged_out", false);
+
+        if (SignedUp) {
             showSuccessToast("Registration successful!");
+        }
+
+        if (loggedOut) {
+            showSuccessToast("Logged out successfully");
         }
 
         // Initialize views
