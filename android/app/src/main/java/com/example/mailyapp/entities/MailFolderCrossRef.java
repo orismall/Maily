@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey;
 )
 
 public class MailFolderCrossRef {
+
     @NonNull
     public String mailId;
 

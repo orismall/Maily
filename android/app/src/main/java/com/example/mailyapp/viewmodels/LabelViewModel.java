@@ -18,6 +18,7 @@ import com.example.mailyapp.models.User;
 import com.example.mailyapp.repositories.LabelRepository;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class LabelViewModel extends AndroidViewModel {
 
@@ -86,6 +87,31 @@ public class LabelViewModel extends AndroidViewModel {
                 }
         );
     }
+
+    public void addMailToLabel(String mailId, String labelId, MailViewModel mailViewModel, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        // ✅ Guard against invalid labelId
+        if (labelId == null || !labelId.matches("^[a-fA-F0-9]{24}$")) {
+            onFailure.accept(new IllegalArgumentException("Invalid labelId: " + labelId));
+            return;
+        }
+        repository.addMailToLabel(mailId, labelId, () -> {
+            mailViewModel.addLabelToMailLocally(mailId, labelId);
+            onSuccess.run();
+        }, onFailure);
+    }
+
+    public void removeMailFromLabel(String mailId, String labelId, MailViewModel mailViewModel, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.removeMailFromLabel(mailId, labelId, () -> {
+            mailViewModel.removeLabelFromMailLocally(mailId, labelId);
+            onSuccess.run();
+        }, onFailure);
+    }
+
+
+    public void removeMailFromLabel(String mailId, String labelId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.removeMailFromLabel(mailId, labelId, onSuccess, onFailure);
+    }
+
 
 
 }

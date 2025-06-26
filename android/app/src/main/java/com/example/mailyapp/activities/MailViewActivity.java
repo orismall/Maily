@@ -1,6 +1,10 @@
 package com.example.mailyapp.activities;
 
 import android.annotation.SuppressLint;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,25 +14,23 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.mailyapp.R;
+import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.viewmodels.LabelViewModel;
 import com.example.mailyapp.viewmodels.MailViewModel;
 import com.google.android.material.button.MaterialButton;
 
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.widget.PopupMenu;
 import android.widget.Toast;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class MailViewActivity extends AppCompatActivity {
-    private final Set<Integer> selectedLabelIds = new HashSet<>();
+
+    private MailViewModel mailViewModel;
+    private LabelViewModel labelViewModel;
+    private Mail currentMail;
 
     private TextView subjectTextView, fromTextView, bodyTextView;
     private ImageButton backButton, trashButton, spamButton, readUnreadButton, moreOptionsButtonTop;
@@ -43,6 +45,10 @@ public class MailViewActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mail_view);
+        labelViewModel = new ViewModelProvider(this).get(LabelViewModel.class);
+        mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
+
+        currentMail = (Mail) getIntent().getSerializableExtra("mail");
 
         viewModel = new ViewModelProvider(this).get(MailViewModel.class);
 
@@ -91,7 +97,6 @@ public class MailViewActivity extends AppCompatActivity {
 
         // Basic back button behavior
         backButton.setOnClickListener(v -> finish());
-
         moreOptionsButtonTop.setOnClickListener(v -> showLabelPopup());
 
         moreOptionsButtonInline.setOnClickListener(v -> {
@@ -101,11 +106,9 @@ public class MailViewActivity extends AppCompatActivity {
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     true);
 
-            // Optional: Background for touch outside to dismiss
             popupWindow.setBackgroundDrawable(null);
-            popupWindow.setElevation(20f); // or 8dp
+            popupWindow.setElevation(20f);
 
-            // Find options
             TextView replyOption = popupView.findViewById(R.id.optionReply);
             TextView forwardOption = popupView.findViewById(R.id.optionForward);
 
@@ -119,50 +122,68 @@ public class MailViewActivity extends AppCompatActivity {
                 popupWindow.dismiss();
             });
 
-            // Show anchored to the 3-dots button
             popupWindow.showAsDropDown(moreOptionsButtonInline, -30, 0);
         });
 
-
+        trashButton.setOnClickListener(v -> {
+            mailViewModel.moveToTrash(currentMail.getId(),
+                    () -> runOnUiThread(() -> {
+                        Toast.makeText(this, "Moved to trash", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }),
+                    error -> runOnUiThread(() -> {
+                        Toast.makeText(this, "Failed to move to trash", Toast.LENGTH_SHORT).show();
+                    })
+            );
+        });
     }
 
     private void showLabelPopup() {
-        View popupView = getLayoutInflater().inflate(R.layout.menu_label_popup, null);
+        View popupView = getLayoutInflater().inflate(R.layout.mail_more_menu, null);
+        LinearLayout container = popupView.findViewById(R.id.label_container);
+
         PopupWindow popupWindow = new PopupWindow(popupView,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                true); // focusable = true so it dismisses when clicking outside
+                true);
 
-        // Find checkboxes
-        CheckBox workCheck = popupView.findViewById(R.id.label_work);
-        CheckBox personalCheck = popupView.findViewById(R.id.label_personal);
-        CheckBox importantCheck = popupView.findViewById(R.id.label_important);
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popupWindow.setOutsideTouchable(true);
+        popupWindow.setFocusable(true);
 
-        // Restore current states
-        workCheck.setChecked(selectedLabelIds.contains(R.id.label_work));
-        personalCheck.setChecked(selectedLabelIds.contains(R.id.label_personal));
-        importantCheck.setChecked(selectedLabelIds.contains(R.id.label_important));
+        labelViewModel.getAllLabels().observe(this, labelEntities -> {
+            container.removeAllViews();
 
-        // Handle toggle
-        View.OnClickListener listener = v -> {
-            CheckBox cb = (CheckBox) v;
-            int id = cb.getId();
-            if (cb.isChecked()) {
-                selectedLabelIds.add(id);
-                Toast.makeText(this, "Labeled: " + cb.getText(), Toast.LENGTH_SHORT).show();
-            } else {
-                selectedLabelIds.remove(id);
-                Toast.makeText(this, "Unlabeled: " + cb.getText(), Toast.LENGTH_SHORT).show();
+            for (LabelEntity label : labelEntities) {
+                CheckBox checkBox = new CheckBox(this);
+                checkBox.setText(label.getName());
+                checkBox.setChecked(label.getMailIds().contains(currentMail.getId()));
+
+                checkBox.setTextColor(Color.BLACK);
+                checkBox.setButtonTintList(ColorStateList.valueOf(Color.DKGRAY));
+                checkBox.setPadding(24, 12, 24, 12);
+                checkBox.setTextSize(16);
+                checkBox.setTypeface(Typeface.DEFAULT_BOLD);
+                checkBox.setBackgroundResource(android.R.drawable.list_selector_background);
+
+                checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (isChecked) {
+                        labelViewModel.addMailToLabel(currentMail.getId(), label.getId(), mailViewModel,
+                                () -> runOnUiThread(() -> Toast.makeText(this, "Labeled: " + label.getName(), Toast.LENGTH_SHORT).show()),
+                                err -> runOnUiThread(() -> Toast.makeText(this, "Failed to label", Toast.LENGTH_SHORT).show())
+                        );
+                    } else {
+                        labelViewModel.removeMailFromLabel(currentMail.getId(), label.getId(), mailViewModel,
+                                () -> runOnUiThread(() -> Toast.makeText(this, "Unlabeled: " + label.getName(), Toast.LENGTH_SHORT).show()),
+                                err -> runOnUiThread(() -> Toast.makeText(this, "Failed to remove label", Toast.LENGTH_SHORT).show())
+                        );
+                    }
+                });
+
+                container.addView(checkBox);
             }
-        };
+        });
 
-        workCheck.setOnClickListener(listener);
-        personalCheck.setOnClickListener(listener);
-        importantCheck.setOnClickListener(listener);
-
-        // Show anchored to 3-dots button
-        popupWindow.setElevation(8);
         popupWindow.showAsDropDown(moreOptionsButtonTop, -16, 0);
     }
-
 }

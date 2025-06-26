@@ -107,4 +107,6 @@ public interface MailApi {
     @PATCH("mails/{id}")
     Call<Void> updateMailFlags(@Path("id") String mailId, @Body MailFlagUpdate update);
 
+
+
 }
