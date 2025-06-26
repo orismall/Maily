@@ -9,8 +9,11 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.mailyapp.data.AppDatabase;
 import com.example.mailyapp.data.LabelDao;
+import com.example.mailyapp.data.MailDao;
 import com.example.mailyapp.entities.LabelEntity;
+import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.models.Label;
+import com.example.mailyapp.models.MailFlagUpdate;
 import com.example.mailyapp.webservices.LabelApi;
 import com.example.mailyapp.webservices.MailApi;
 import com.example.mailyapp.webservices.RetrofitClient;
@@ -60,26 +63,60 @@ public class LabelRepository {
         });
     }
 
-    public void deleteById(String id) {
-        // 1. Delete from Room
-        executorService.execute(() -> labelDao.deleteById(id));
+    public void deleteById(String labelId) {
+        executorService.execute(() -> {
+            // 1. Delete the label from Room
+            labelDao.deleteById(labelId);
 
-        // 2. Delete from MongoDB via LabelApi
-        LabelApi labelApi = RetrofitClient.getInstance(application).create(LabelApi.class);
-        labelApi.deleteLabel(id).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (!response.isSuccessful()) {
-                    Log.e("LabelRepository", "Failed to delete label from backend: " + response.code());
+            // 2. Fetch all mails from Room
+            MailDao mailDao = AppDatabase.getInstance(application).mailDao();
+            List<MailEntity> mails = mailDao.getAllNow(); // Synchronous method needed
+
+            List<MailEntity> mailsToUpdate = new ArrayList<>();
+            for (MailEntity mail : mails) {
+                List<String> labels = mail.getLabels();
+                if (labels != null && labels.contains(labelId)) {
+                    labels = new ArrayList<>(labels);
+                    labels.remove(labelId);
+                    mail.setLabels(labels);
+                    mailDao.updateLabels(mail.getId(), mail.getLabels()); // update in Room
+                    mailsToUpdate.add(mail); // queue for server
                 }
             }
 
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Log.e("LabelRepository", "Error deleting label from backend", t);
+            // 3. Delete the label in MongoDB
+            LabelApi labelApi = RetrofitClient.getInstance(application).create(LabelApi.class);
+            labelApi.deleteLabel(labelId).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    Log.d("LabelRepository", "Deleted label on server");
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    Log.e("LabelRepository", "Failed to delete label", t);
+                }
+            });
+
+            // 4. For each affected mail, send updated label list to server
+            MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
+            for (MailEntity mail : mailsToUpdate) {
+                MailFlagUpdate update = new MailFlagUpdate(mail.getLabels());
+                mailApi.updateMailFlags(mail.getId(), update).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        Log.d("LabelRepository", "Updated mail on server: " + mail.getId());
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Log.e("LabelRepository", "Failed to update mail " + mail.getId(), t);
+                    }
+                });
             }
         });
     }
+
 
     public void updateLabel(String id, Label updatedLabel, Consumer<Label> callback) {
         LabelApi labelApi = RetrofitClient.getInstance(application).create(LabelApi.class);
@@ -166,9 +203,18 @@ public class LabelRepository {
 
                 if (response.isSuccessful()) {
                     if (createdLabel == null) {
-                        Log.w("LabelRepository", "Created label body is null. Fallback to original.");
-                        createdLabel = label;
-                        createdLabel.setId(label.getName());
+                        // ✅ Extract ID from Location header
+                        String location = response.headers().get("Location");
+                        if (location != null && location.contains("/")) {
+                            String id = location.substring(location.lastIndexOf("/") + 1);
+                            createdLabel = label;
+                            createdLabel.setId(id);
+                            Log.w("LabelRepository", "Label ID extracted from Location: " + id);
+                        } else {
+                            Log.e("LabelRepository", "No label body or Location header. Cannot assign valid ID.");
+                            callback.accept(null);
+                            return;
+                        }
                     }
 
                     insert(convertToEntity(createdLabel));
@@ -192,6 +238,8 @@ public class LabelRepository {
             }
         });
     }
+
+
 
 
     /**
@@ -220,8 +268,16 @@ public class LabelRepository {
                         onSuccess.run();
                     });
                 } else {
-                    onFailure.accept(new Exception("Failed: " + response.code()));
+                    try {
+                        String error = response.errorBody() != null ? response.errorBody().string() : "null";
+                        Log.e("LabelRepository", "addMailToLabel failed: " + response.code() + " - " + error);
+                        onFailure.accept(new Exception("Failed: " + response.code() + " - " + error));
+                    } catch (IOException e) {
+                        Log.e("LabelRepository", "Failed to read error body", e);
+                        onFailure.accept(e);
+                    }
                 }
+
             }
 
             @Override

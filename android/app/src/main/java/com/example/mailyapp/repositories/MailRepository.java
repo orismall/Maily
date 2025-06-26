@@ -8,7 +8,9 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
 import com.example.mailyapp.data.AppDatabase;
+import com.example.mailyapp.data.LabelDao;
 import com.example.mailyapp.data.MailDao;
+import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.entities.MailFolderCrossRef;
 import com.example.mailyapp.models.Mail;
@@ -57,8 +59,32 @@ public class MailRepository {
     }
 
     public void deleteById(String mailId) {
-        executorService.execute(() -> mailDao.deleteById(mailId));
+        executorService.execute(() -> {
+            MailDao mailDao = AppDatabase.getInstance(application).mailDao();
+            LabelDao labelDao = AppDatabase.getInstance(application).labelDao();
+
+            MailEntity mail = mailDao.getNow(mailId);
+            if (mail != null && mail.getLabels() != null) {
+                List<String> labelIds = new ArrayList<>(mail.getLabels());
+
+                for (String labelId : labelIds) {
+                    LabelEntity label = labelDao.getNow(labelId);
+                    if (label != null && label.getMailIds() != null && label.getMailIds().contains(mailId)) {
+                        List<String> updatedMailIds = new ArrayList<>(label.getMailIds());
+                        updatedMailIds.remove(mailId);
+                        label.setMailIds(updatedMailIds);
+                        labelDao.update(label); // ✅ Use update instead of insert
+                    }
+                }
+            }
+
+            // 💥 Delete mail from Room
+            mailDao.deleteById(mailId);
+        });
     }
+
+
+
 
     public void deleteAll() {
         executorService.execute(mailDao::deleteAll);
@@ -239,7 +265,30 @@ public class MailRepository {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    onSuccess.run();
+                    executorService.execute(() -> {
+                        MailEntity mail = mailDao.getNow(mailId);
+                        if (mail != null && mail.getLabels() != null) {
+                            List<String> labelIds = new ArrayList<>(mail.getLabels());
+                            LabelDao labelDao = AppDatabase.getInstance(application).labelDao();
+
+                            // 1. Remove mailId from each label
+                            for (String labelId : labelIds) {
+                                LabelEntity label = labelDao.getNow(labelId);
+                                if (label != null && label.getMailIds() != null && label.getMailIds().contains(mailId)) {
+                                    List<String> updatedMailIds = new ArrayList<>(label.getMailIds());
+                                    updatedMailIds.remove(mailId);
+                                    label.setMailIds(updatedMailIds);
+                                    labelDao.insert(label); // assuming REPLACE behavior here
+                                }
+                            }
+
+                            // 2. Remove all labelIds from the mail
+                            mail.setLabels(new ArrayList<>());
+                            mailDao.insert(mail); // update the mail with empty labels
+                        }
+
+                        onSuccess.run();
+                    });
                 } else {
                     onFailure.accept(new Exception("Trash failed with code: " + response.code()));
                 }
@@ -251,6 +300,7 @@ public class MailRepository {
             }
         });
     }
+
 
     public void addLabelToMailLocally(String mailId, String labelId) {
         executorService.execute(() -> {

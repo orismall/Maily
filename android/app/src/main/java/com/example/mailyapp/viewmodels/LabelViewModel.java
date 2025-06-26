@@ -89,6 +89,11 @@ public class LabelViewModel extends AndroidViewModel {
     }
 
     public void addMailToLabel(String mailId, String labelId, MailViewModel mailViewModel, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        // ✅ Guard against invalid labelId
+        if (labelId == null || !labelId.matches("^[a-fA-F0-9]{24}$")) {
+            onFailure.accept(new IllegalArgumentException("Invalid labelId: " + labelId));
+            return;
+        }
         repository.addMailToLabel(mailId, labelId, () -> {
             mailViewModel.addLabelToMailLocally(mailId, labelId);
             onSuccess.run();
