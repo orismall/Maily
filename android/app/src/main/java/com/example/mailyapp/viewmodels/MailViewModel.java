@@ -59,4 +59,14 @@ public class MailViewModel extends AndroidViewModel {
     public LiveData<List<Mail>> getRemoteMails() {
         return remoteMails;
     }
+
+    public void updateStarredFlag(String mailId, boolean isStarred) {
+        repository.updateStarredFlag(mailId, isStarred);
+    }
+    public LiveData<List<MailEntity>> getLocalMailsByFolder(String folder) {
+        return repository.getMailsByFolder(folder);
+    }
+    public void refreshAllMails(Runnable onComplete) {
+        repository.refreshAllMailsFromApi(onComplete);
+    }
 }
