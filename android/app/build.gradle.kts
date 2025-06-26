@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.material)
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // Room dependencies
     implementation ("androidx.room:room-runtime:2.6.1")

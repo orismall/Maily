@@ -21,4 +21,3 @@ public class MailFolderCrossRef {
         this.folder = folder;
     }
 }
-

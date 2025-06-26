@@ -40,7 +40,7 @@ public interface MailDao {
     @Query("UPDATE mails SET isStarred = :isStarred WHERE id = :mailId")
     void updateStarredFlag(String mailId, boolean isStarred);
 
-    // 🔹 Folder connections
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insertFolderRef(MailFolderCrossRef ref);
 

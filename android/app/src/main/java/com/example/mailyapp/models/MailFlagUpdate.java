@@ -12,4 +12,3 @@ public class MailFlagUpdate {
     public Boolean getIsStarred() { return isStarred; }
     public Boolean getIsRead() { return isRead; }
 }
-

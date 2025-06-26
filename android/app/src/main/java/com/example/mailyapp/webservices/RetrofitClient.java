@@ -4,6 +4,8 @@ import static com.example.mailyapp.MyApplication.context;
 
 import android.content.Context;
 
+import com.example.mailyapp.models.Label;
+import com.example.mailyapp.models.LabelDeserializer;
 import com.example.mailyapp.models.Mail;
 import com.example.mailyapp.models.MailDeserializer;
 import com.google.gson.Gson;
@@ -28,6 +30,7 @@ public class RetrofitClient {
 
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Mail.class, new MailDeserializer())
+                    .registerTypeAdapter(Label.class, new LabelDeserializer())
                     .create();
 
             retrofit = new Retrofit.Builder()

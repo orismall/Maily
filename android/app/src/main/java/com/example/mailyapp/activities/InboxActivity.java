@@ -29,13 +29,17 @@ import com.example.mailyapp.data.AppDatabase;
 import com.example.mailyapp.data.LabelDao;
 import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.MailEntity;
+import com.example.mailyapp.models.Label;
 import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.viewmodels.LabelViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.example.mailyapp.viewmodels.MailViewModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 
 public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMailClickListener {
 
@@ -45,11 +49,10 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private MailAdapter mailAdapter;
     private SearchView searchView;
     private AppDatabase db;
-    private LabelDao labelDao;
     private View currentSelectedNavItem;
     private ArrayAdapter<LabelEntity> adapter;
     private ListView lvLabels;
-
+    private LabelViewModel labelViewModel;
     List<LabelEntity> labels;
     private MailViewModel mailViewModel;
     private String currentFolder = "inbox";
@@ -62,20 +65,30 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
 
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
                         "MailyDB").allowMainThreadQueries().build();
-        labelDao = db.labelDao();
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
+        labelViewModel = new ViewModelProvider(this).get(LabelViewModel.class);
+
+        // Initially load labels from Room (no API call)
+        labels = new ArrayList<>();
+
+        labelViewModel.getAllLabels().observe(this, updatedLabels -> {
+            labels.clear();
+            labels.addAll(updatedLabels);
+            adapter.notifyDataSetChanged();
+            justifyListViewHeightBasedOnChildren(lvLabels);
+        });
+
         // Setup Drawer (sideBar)
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
         // Find the ListView from the navigation drawer
         lvLabels = navigationView.findViewById(R.id.lv_labels);
-        labels = labelDao.index();
-
+        labels = new ArrayList<>();
         adapter = new ArrayAdapter<LabelEntity>(
                 this, R.layout.item_label, R.id.label_name, labels
         ) {
@@ -96,9 +109,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                 .setTitle("Delete Label")
                                 .setMessage("Are you sure you want to delete this label?")
                                 .setPositiveButton("Delete", (dialog, which) -> {
-                                    labelDao.delete(label);
-                                    labels.remove(label);
-                                    notifyDataSetChanged();
+                                    labelViewModel.deleteById(label.getId()); // 🔁 Triggers Room + LiveData update automatically
+
                                     justifyListViewHeightBasedOnChildren(lvLabels);
                                     Toast.makeText(InboxActivity.this, "Label deleted", Toast.LENGTH_SHORT).show();
                                 })
@@ -117,9 +129,22 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                     String newName = input.getText().toString().trim();
                                     if (!newName.isEmpty()) {
                                         label.setName(newName);
-                                        labelDao.update(label);
-                                        notifyDataSetChanged();
-                                        Toast.makeText(InboxActivity.this, "Label updated", Toast.LENGTH_SHORT).show();
+
+                                        Label updatedLabel = new Label(label.getName());
+                                        updatedLabel.setId(label.getId());
+                                        updatedLabel.setColor(label.getColor());
+                                        updatedLabel.setMailIds(label.getMailIds());
+
+                                        labelViewModel.updateLabel(label.getId(), updatedLabel, result -> {
+                                            runOnUiThread(() -> {
+                                                if (result != null) {
+                                                    Toast.makeText(InboxActivity.this, "Label updated", Toast.LENGTH_SHORT).show();
+                                                } else {
+                                                    Toast.makeText(InboxActivity.this, "Failed to update label", Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                        });
+
                                     } else {
                                         Toast.makeText(InboxActivity.this, "Label name can't be empty", Toast.LENGTH_SHORT).show();
                                     }
@@ -127,6 +152,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                 .setNegativeButton("Cancel", null)
                                 .show();
                     });
+
 
                 }
 
@@ -219,20 +245,12 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             loadMailsForFolder(currentFolder);
         });
 
-        // Temporary hardcoded session
-        getSharedPreferences("session", MODE_PRIVATE)
-                .edit()
-                .putString("token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODU5MmE0NmRhZTUzNDJiYzlkM2Q1ZmIiLCJpYXQiOjE3NTA4NjU0MTEsImV4cCI6MTc1MDg3MjYxMX0.NMZzHhXDXzXKT5BbqCDg6CilVaqu_wpZn9CO3S6Ko7Y")
-                .putString("user_id", "68592a46dae5342bc9d3d5fb")
-                .apply();
-
         // Mail list setup
         mailRecyclerView = findViewById(R.id.mailRecyclerView);
         mailRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
         mailViewModel.fetchFolder(currentFolder, 1);
-
         mailViewModel.getLocalMailsByFolder(currentFolder).observe(this, entities -> {
             if (entities == null) return;
 
@@ -240,10 +258,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             for (MailEntity entity : entities) {
                 mails.add(entity.toModel());
             }
-
-            //mailViewModel.getRemoteMails().observe(this, mails -> {
-            //Log.d("InboxActivity", " Received " + (mails != null ? mails.size() : "null") + " mails");
-
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
                 mailRecyclerView.setAdapter(mailAdapter);
@@ -251,6 +265,17 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                 mailAdapter.updateData(mails);
             }
         });
+
+        SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.swipeRefresh);
+
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            mailViewModel.refreshAllMails(() -> {
+                runOnUiThread(() -> swipeRefreshLayout.setRefreshing(false));
+            });
+
+            labelViewModel.refreshFromApi(); // This already works fine
+        });
+
 
 
         // SearchView setup (already inside the Toolbar)
@@ -278,16 +303,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        labels.clear();
-        labels.addAll(labelDao.index());
-        adapter.notifyDataSetChanged();
-        justifyListViewHeightBasedOnChildren(lvLabels);
-    }
-
     @Override
     public void onMailClick(Mail mail) {
         Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
@@ -343,8 +358,4 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             }
         });
     }
-
-
-
-
 }

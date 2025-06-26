@@ -1,15 +1,18 @@
 package com.example.mailyapp.viewmodels;
 
+import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import com.example.mailyapp.models.LoginRequest;
 import com.example.mailyapp.models.LoginResponse;
 import com.example.mailyapp.models.User;
-import com.example.mailyapp.webservices.RetrofitClient;
+import com.example.mailyapp.repositories.UserRepository;
 
 import org.json.JSONObject;
 
@@ -17,11 +20,18 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class UserViewModel extends ViewModel {
+public class UserViewModel extends AndroidViewModel {
 
-    private MutableLiveData<Boolean> registrationSuccess = new MutableLiveData<>();
-    private MutableLiveData<LoginResponse> loginResponse = new MutableLiveData<>();
-    private MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    private final UserRepository repository;
+
+    private final MutableLiveData<Boolean> registrationSuccess = new MutableLiveData<>();
+    private final MutableLiveData<LoginResponse> loginResponse = new MutableLiveData<>();
+    private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+
+    public UserViewModel(@NonNull Application application) {
+        super(application);
+        this.repository = new UserRepository(application.getApplicationContext());
+    }
 
     public LiveData<Boolean> getRegistrationSuccess() {
         return registrationSuccess;
@@ -35,22 +45,14 @@ public class UserViewModel extends ViewModel {
         return errorMessage;
     }
 
-    public void registerUser(Context context, User user) {
-        RetrofitClient.getUserAPI(context).registerUser(user).enqueue(new Callback<Void>() {
+    public void registerUser(User user) {
+        repository.registerUser(user, new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     registrationSuccess.setValue(true);
                 } else {
-                    try {
-                        String errorBody = response.errorBody().string();
-                        JSONObject errorJson = new JSONObject(errorBody);
-                        String message = errorJson.optString("error", "Registration failed");
-                        errorMessage.setValue(message);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        errorMessage.setValue("Registration failed: Unknown error");
-                    }
+                    handleError(response, "Registration failed");
                     registrationSuccess.setValue(false);
                 }
             }
@@ -63,23 +65,22 @@ public class UserViewModel extends ViewModel {
         });
     }
 
-
-    public void loginUser(Context context, LoginRequest request) {
-        RetrofitClient.getUserAPI(context).loginUser(request).enqueue(new Callback<LoginResponse>() {
+    public void loginUser(LoginRequest request) {
+        repository.loginUser(request, new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     loginResponse.setValue(response.body());
+
+                    SharedPreferences prefs = getApplication()
+                            .getSharedPreferences("session", Context.MODE_PRIVATE);
+                    prefs.edit()
+                            .putString("token", response.body().getToken())
+                            .putString("user_id", response.body().getUserId())
+                            .apply();
+
                 } else {
-                    try {
-                        String errorBody = response.errorBody().string();
-                        JSONObject errorJson = new JSONObject(errorBody);
-                        String message = errorJson.optString("error", "Login failed");
-                        errorMessage.setValue(message);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        errorMessage.setValue("Login failed: Unknown error");
-                    }
+                    handleError(response, "Login failed");
                 }
             }
 
@@ -90,4 +91,15 @@ public class UserViewModel extends ViewModel {
         });
     }
 
+    private void handleError(Response<?> response, String defaultMsg) {
+        try {
+            String errorBody = response.errorBody().string();
+            JSONObject json = new JSONObject(errorBody);
+            String message = json.optString("error", defaultMsg);
+            errorMessage.setValue(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorMessage.setValue(defaultMsg + ": Unknown error");
+        }
+    }
 }

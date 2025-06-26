@@ -11,10 +11,10 @@ import retrofit2.http.POST;
 
 public interface UserAPI {
 
-    @POST("/api/users")
+    @POST("users")
     Call<Void> registerUser(@Body User user);
 
-    @POST("/api/tokens")
+    @POST("tokens")
     Call<LoginResponse> loginUser(@Body LoginRequest loginRequest);
 
 }
