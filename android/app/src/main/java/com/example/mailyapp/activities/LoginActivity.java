@@ -42,7 +42,7 @@ public class LoginActivity extends BaseActivity {
         userViewModel.getLoginResponse().observe(this, response -> {
             Intent i = new Intent(this, InboxActivity.class);
             i.putExtra("token", response.getToken());
-            i.putExtra("userId", response.getUserId());
+            i.putExtra("user_id", response.getUserId());
             startActivity(i);
             finish();
         });

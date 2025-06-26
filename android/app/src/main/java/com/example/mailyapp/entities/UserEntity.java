@@ -7,9 +7,11 @@ import androidx.room.PrimaryKey;
 
 @Entity(tableName = "users")
 public class UserEntity {
-    @NonNull
+
     @PrimaryKey
+    @NonNull
     public String email;
+
     public String firstName;
     public String lastName;
     public String gender;
@@ -23,15 +25,6 @@ public class UserEntity {
         this.lastName = lastName;
         this.gender = gender;
         this.birthdate = birthdate;
-        this.avatar = avatar;
-    }
-    @Ignore
-    public UserEntity(String email, String firstName, String lastName, String avatar) {
-        this.email = email;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.gender = null;
-        this.birthdate = null;
         this.avatar = avatar;
     }
 }

@@ -8,7 +8,6 @@ import com.example.mailyapp.models.User;
 import com.example.mailyapp.webservices.RetrofitClient;
 import com.example.mailyapp.webservices.UserAPI;
 
-import retrofit2.Call;
 import retrofit2.Callback;
 
 public class UserRepository {

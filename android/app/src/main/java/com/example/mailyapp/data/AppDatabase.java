@@ -12,7 +12,7 @@ import com.example.mailyapp.entities.UserEntity;
 
 import com.example.mailyapp.utils.Converters;
 
-@Database(entities = {MailEntity.class, LabelEntity.class,UserEntity.class}, version = 4, exportSchema = false)
+@Database(entities = {MailEntity.class, LabelEntity.class,UserEntity.class}, version = 3, exportSchema = false)
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase {
 
