@@ -8,9 +8,10 @@ import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.MailEntity;
+import com.example.mailyapp.entities.MailFolderCrossRef;
 import com.example.mailyapp.utils.Converters;
 
-@Database(entities = {MailEntity.class, LabelEntity.class}, version = 3, exportSchema = false)
+@Database(entities = {MailEntity.class, LabelEntity.class, MailFolderCrossRef.class}, version = 4, exportSchema = false)
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase {
 

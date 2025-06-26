@@ -13,14 +13,14 @@ import java.util.List;
 @Dao
 public interface LabelDao {
 
-    @Query("SELECT * FROM LabelEntity")
+    @Query("SELECT * FROM labels")
     LiveData<List<LabelEntity>> index();
 
-    @Query("SELECT * FROM LabelEntity WHERE id = :id")
+    @Query("SELECT * FROM labels WHERE id = :id")
     LiveData<LabelEntity> get(String id);
-    @Query("DELETE FROM LabelEntity")
+    @Query("DELETE FROM labels")
     void deleteAll();
-    @Query("DELETE FROM LabelEntity WHERE id = :id")
+    @Query("DELETE FROM labels WHERE id = :id")
     void deleteById(String id);
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(LabelEntity... labels);

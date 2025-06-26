@@ -61,6 +61,17 @@ public class MailDeserializer implements JsonDeserializer<Mail> {
                 mail.setLabels(labels);
             }
 
+            // Deserialize isStarred
+            if (obj.has("isStarred") && !obj.get("isStarred").isJsonNull()) {
+                mail.setStarred(obj.get("isStarred").getAsBoolean());
+            }
+
+            // Deserialize isRead
+            if (obj.has("isRead") && !obj.get("isRead").isJsonNull()) {
+                mail.setRead(obj.get("isRead").getAsBoolean());
+            }
+
+
             return mail;
 
         } catch (Exception e) {
