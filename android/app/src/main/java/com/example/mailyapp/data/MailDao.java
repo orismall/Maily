@@ -74,4 +74,12 @@ public interface MailDao {
     @Query("UPDATE mails SET labels = :labels WHERE id = :mailId")
     void updateLabels(String mailId, List<String> labels);
 
+    @Query("SELECT * FROM mails WHERE " +
+            "subject LIKE '%' || :query || '%' " +
+            "OR content LIKE '%' || :query || '%' " +
+            "OR sender LIKE '%' || :query || '%' " +
+            "OR receiver LIKE '%' || :query || '%' " +
+            "ORDER BY date DESC")
+    LiveData<List<MailEntity>> searchMails(String query);
+
 }

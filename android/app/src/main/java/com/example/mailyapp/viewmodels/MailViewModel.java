@@ -87,4 +87,9 @@ public class MailViewModel extends AndroidViewModel {
         return repository.getMailsByLabel(labelId);
     }
 
+    public LiveData<List<MailEntity>> searchMails(String query) {
+        return repository.searchMails(query);
+    }
+
+
 }

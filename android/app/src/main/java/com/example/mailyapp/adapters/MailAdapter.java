@@ -1,5 +1,9 @@
 package com.example.mailyapp.adapters;
 
+import android.graphics.Color;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.BackgroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +22,8 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
 
     private List<Mail> mailList;
     private OnMailClickListener listener;
+
+    private String searchQuery = null;
 
     // Interface to handle mail click events
     public interface OnMailClickListener {
@@ -51,16 +57,16 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         Mail mail = mailList.get(position);
 
         String sender = mail.getSender();
-        holder.senderTextView.setText(sender != null ? sender : "(No sender)");
+        holder.senderTextView.setText(highlightQuery(sender != null ? sender : "(No sender)"));
 
         String subject = mail.getSubject();
-        holder.subjectTextView.setText(subject != null ? subject : "(No subject)");
+        holder.subjectTextView.setText(highlightQuery(subject != null ? subject : "(No subject)"));
 
         String snippet = mail.getContent();
         if (snippet != null && snippet.length() > 60) {
             snippet = snippet.substring(0, 60) + "...";
         }
-        holder.snippetTextView.setText(snippet != null ? snippet : "");
+        holder.snippetTextView.setText(highlightQuery(snippet != null ? snippet : ""));
 
         String date = mail.getDate();
         holder.dateTextView.setText(date != null ? date : "");
@@ -119,4 +125,31 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         this.mailList = newMails;
         notifyDataSetChanged();
     }
+
+    public void setSearchQuery(String query) {
+        this.searchQuery = query != null ? query.toLowerCase() : null;
+        notifyDataSetChanged();
+    }
+
+    private CharSequence highlightQuery(String originalText) {
+        if (searchQuery == null || searchQuery.isEmpty() || originalText == null) {
+            return originalText;
+        }
+
+        String lowerText = originalText.toLowerCase();
+        SpannableString spannable = new SpannableString(originalText);
+
+        int index = lowerText.indexOf(searchQuery);
+        while (index >= 0) {
+            BackgroundColorSpan yellowHighlight = new BackgroundColorSpan(Color.YELLOW);
+            spannable.setSpan(yellowHighlight, index, index + searchQuery.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            index = lowerText.indexOf(searchQuery, index + searchQuery.length());
+        }
+
+        return spannable;
+    }
+
+
+
 }
