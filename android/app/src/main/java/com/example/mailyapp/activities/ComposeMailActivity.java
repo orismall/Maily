@@ -1,16 +1,15 @@
 package com.example.mailyapp.activities;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.mailyapp.R;
-import com.example.mailyapp.entities.DraftEntity;
 import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.models.Mail;
-import com.example.mailyapp.repositories.DraftRepository;
 import com.example.mailyapp.repositories.MailRepository;
 import com.example.mailyapp.webservices.MailApi;
 import com.example.mailyapp.webservices.RetrofitClient;
@@ -32,6 +31,8 @@ public class ComposeMailActivity extends AppCompatActivity {
 
     private EditText etTo, etSubject, etBody;
     private View rootView;
+    private boolean isDraft = false;
+    private String draftId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +52,15 @@ public class ComposeMailActivity extends AppCompatActivity {
         fromEmail.setText(userEmail);
         fromEmail.setEnabled(false);
         fromEmail.setFocusable(false);
+
+        Intent intent = getIntent();
+        isDraft = intent.getBooleanExtra("isDraft", false);
+        if (isDraft) {
+            draftId = intent.getStringExtra("draftId");
+            etTo.setText(intent.getStringExtra("to"));
+            etSubject.setText(intent.getStringExtra("subject"));
+            etBody.setText(intent.getStringExtra("body"));
+        }
 
         btnClose.setOnClickListener(v -> saveDraft());
 
@@ -82,7 +92,33 @@ public class ComposeMailActivity extends AppCompatActivity {
                         .setNegativeButton("Cancel", null)
                         .show();
             } else {
-                sendMail(recipients, subject, body);
+                if (isDraft && draftId != null) {
+                    MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
+                    Mail updated = new Mail();
+                    updated.setReceiver(recipients);
+                    updated.setSubject(subject.isEmpty() ? "(No subject)" : subject);
+                    updated.setContent(body);
+                    updated.setType("draft");
+
+                    Call<Mail> updateCall = api.updateDraft(draftId, updated);
+                    updateCall.enqueue(new Callback<Mail>() {
+                        @Override
+                        public void onResponse(Call<Mail> call, Response<Mail> response) {
+                            if (response.isSuccessful()) {
+                                sendDraftAsMail(draftId);
+                            } else {
+                                Snackbar.make(rootView, "Failed to update draft before sending", Snackbar.LENGTH_LONG).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<Mail> call, Throwable t) {
+                            Snackbar.make(rootView, "Error updating draft: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
+                        }
+                    });
+                } else {
+                    sendMail(recipients, subject, body);
+                }
             }
         });
     }
@@ -133,6 +169,50 @@ public class ComposeMailActivity extends AppCompatActivity {
         });
     }
 
+    private void sendDraftAsMail(String draftId) {
+        MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
+        Call<Mail> call = api.sendDraftAsMailWithResponse(draftId);
+
+        call.enqueue(new Callback<Mail>() {
+            @Override
+            public void onResponse(Call<Mail> call, Response<Mail> response) {
+                if (response.isSuccessful()) {
+                    Mail sentMail = response.body();
+
+                    MailEntity entity = new MailEntity(
+                            sentMail.getId(),
+                            sentMail.getSender(),
+                            sentMail.getReceiver(),
+                            sentMail.getSubject(),
+                            sentMail.getContent(),
+                            sentMail.getDate(),
+                            sentMail.getLabels(),
+                            sentMail.getType(),
+                            sentMail.isRead(),
+                            sentMail.isStarred()
+                    );
+
+                    MailRepository repo = new MailRepository(getApplication());
+
+                    repo.removeMailFromAllFolders(draftId);
+
+                    repo.insert(entity);
+                    repo.insertFolderRef(sentMail.getId(), "inbox");
+                    repo.insertFolderRef(sentMail.getId(), "sent");
+
+                    Snackbar.make(rootView, "Draft sent successfully", Snackbar.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    Snackbar.make(rootView, "Failed to send draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<Mail> call, Throwable t) {
+                Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
+            }
+        });
+    }
+
     private void saveDraft() {
         String toInput = etTo.getText().toString().trim();
         String subject = etSubject.getText().toString().trim();
@@ -155,43 +235,84 @@ public class ComposeMailActivity extends AppCompatActivity {
         draft.setType("draft");
 
         MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
-        Call<Void> call = api.createDraft(draft);
 
-        call.enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    String sender = getSharedPreferences("session", MODE_PRIVATE).getString("email", "");
-                    String formattedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-                    String tempId = UUID.randomUUID().toString();
-                    DraftEntity entity = new DraftEntity(
-                            tempId,
-                            sender,
-                            recipients,
-                            draft.getSubject(),
-                            draft.getContent(),
-                            formattedDate,
-                            draft.getLabels(),
-                            "draft",
-                            false,
-                            false
-                    );
-                    DraftRepository repo = new DraftRepository(getApplication());
-                    repo.insert(entity);
+        if (isDraft && draftId != null) {
+            Call<Mail> call = api.updateDraft(draftId, draft);
+            call.enqueue(new Callback<Mail>() {
+                @Override
+                public void onResponse(Call<Mail> call, Response<Mail> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Mail updated = response.body();
 
-                    Snackbar.make(rootView, "Draft saved", Snackbar.LENGTH_SHORT).show();
-                } else {
-                    Snackbar.make(rootView, "Failed to save draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
+                        MailEntity entity = new MailEntity(
+                                updated.getId(),
+                                updated.getSender(),
+                                updated.getReceiver(),
+                                updated.getSubject(),
+                                updated.getContent(),
+                                updated.getDate(),
+                                updated.getLabels(),
+                                updated.getType(),
+                                updated.isRead(),
+                                updated.isStarred()
+                        );
+
+                        MailRepository repo = new MailRepository(getApplication());
+                        repo.insert(entity);
+
+                        Snackbar.make(rootView, "Draft updated", Snackbar.LENGTH_SHORT).show();
+                        finish();
+                    } else {
+                        Snackbar.make(rootView, "Failed to update draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
+                    }
                 }
-                finish();
-            }
+                @Override
+                public void onFailure(Call<Mail> call, Throwable t) {
+                    Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
+                    finish();
+                }
+            });
+        } else {
+            Call<Mail> call = api.createDraft(draft);
+            call.enqueue(new Callback<Mail>() {
+                @Override
+                public void onResponse(Call<Mail> call, Response<Mail> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Mail savedDraft = response.body();
+                        draftId = savedDraft.getId(); // עדכון ה־draftId האמיתי
+                        isDraft = true;
 
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
-                finish();
-            }
-        });
+                        MailEntity entity = new MailEntity(
+                                savedDraft.getId(),
+                                savedDraft.getSender(),
+                                savedDraft.getReceiver(),
+                                savedDraft.getSubject(),
+                                savedDraft.getContent(),
+                                savedDraft.getDate(),
+                                savedDraft.getLabels(),
+                                savedDraft.getType(),
+                                savedDraft.isRead(),
+                                savedDraft.isStarred()
+                        );
+                        MailRepository repo = new MailRepository(getApplication());
+                        repo.insert(entity);
+                        repo.insertFolderRef(savedDraft.getId(), "drafts");
+
+                        Snackbar.make(rootView, "Draft saved", Snackbar.LENGTH_SHORT).show();
+                    } else {
+                        Snackbar.make(rootView, "Failed to save draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
+                    }
+                    finish();
+                }
+
+
+                @Override
+                public void onFailure(Call<Mail> call, Throwable t) {
+                    Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
+                    finish();
+                }
+            });
+        }
     }
 }
 
