@@ -66,5 +66,7 @@ public class MailViewModel extends AndroidViewModel {
     public LiveData<List<MailEntity>> getLocalMailsByFolder(String folder) {
         return repository.getMailsByFolder(folder);
     }
-
+    public void refreshAllMails(Runnable onComplete) {
+        repository.refreshAllMailsFromApi(onComplete);
+    }
 }

@@ -269,15 +269,13 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.swipeRefresh);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            // Refresh mails
-            mailViewModel.fetchFolder(currentFolder, 1);
+            mailViewModel.refreshAllMails(() -> {
+                runOnUiThread(() -> swipeRefreshLayout.setRefreshing(false));
+            });
 
-            // Refresh labels from API and update Room
-            labelViewModel.refreshFromApi();
-
-            // Optional: if you want to delay until data arrives, skip this line
-            swipeRefreshLayout.setRefreshing(false); // Stop the spinner
+            labelViewModel.refreshFromApi(); // This already works fine
         });
+
 
 
         // SearchView setup (already inside the Toolbar)

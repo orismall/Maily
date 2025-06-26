@@ -5,6 +5,7 @@ import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 
 import com.example.mailyapp.data.AppDatabase;
 import com.example.mailyapp.data.MailDao;
@@ -17,9 +18,11 @@ import com.example.mailyapp.webservices.RetrofitClient;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -145,6 +148,31 @@ public class MailRepository {
 
 
     }
+
+    public void refreshAllMailsFromApi(Runnable onComplete) {
+        List<String> folders = Arrays.asList("inbox", "sent", "starred", "drafts", "spam", "trash");
+        AtomicInteger remaining = new AtomicInteger(folders.size());
+
+        for (String folder : folders) {
+            MutableLiveData<List<Mail>> tempLiveData = new MutableLiveData<>();
+
+            // Observe once, then remove the observer
+            tempLiveData.observeForever(new Observer<List<Mail>>() {
+                @Override
+                public void onChanged(List<Mail> mails) {
+                    // When data arrives, mark this folder as done
+                    tempLiveData.removeObserver(this);
+
+                    if (remaining.decrementAndGet() == 0) {
+                        onComplete.run();
+                    }
+                }
+            });
+
+            fetchMailsByFolder(folder, 1, tempLiveData);
+        }
+    }
+
 
 
     public void sendMail(Mail mail, Callback<Void> callback) {
