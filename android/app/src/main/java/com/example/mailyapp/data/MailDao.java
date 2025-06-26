@@ -58,4 +58,20 @@ public interface MailDao {
 
     @Query("SELECT * FROM mails WHERE isStarred = 1 ORDER BY date DESC")
     LiveData<List<MailEntity>> getStarredMails();
+
+    @Query("SELECT * FROM mails WHERE id = :id LIMIT 1")
+    MailEntity getNow(String id);
+
+    @Query("DELETE FROM mail_folder WHERE folder = :folder")
+    void removeAllMappingsForFolder(String folder);
+
+    @Query("SELECT * FROM mails WHERE labels LIKE '%' || :labelId || '%' ORDER BY date DESC")
+    LiveData<List<MailEntity>> getMailsByLabel(String labelId);
+
+    @Query("SELECT * FROM mails")
+    List<MailEntity> getAllNow();
+
+    @Query("UPDATE mails SET labels = :labels WHERE id = :mailId")
+    void updateLabels(String mailId, List<String> labels);
+
 }

@@ -12,6 +12,7 @@ import com.example.mailyapp.models.Mail;
 import com.example.mailyapp.repositories.MailRepository;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class MailViewModel extends AndroidViewModel {
 
@@ -69,4 +70,21 @@ public class MailViewModel extends AndroidViewModel {
     public void refreshAllMails(Runnable onComplete) {
         repository.refreshAllMailsFromApi(onComplete);
     }
+
+    public void moveToTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.moveToTrash(mailId, onSuccess, onFailure);
+    }
+
+    public void addLabelToMailLocally(String mailId, String labelId) {
+        repository.addLabelToMailLocally(mailId, labelId);
+    }
+
+    public void removeLabelFromMailLocally(String mailId, String labelId) {
+        repository.removeLabelFromMailLocally(mailId, labelId);
+    }
+
+    public LiveData<List<MailEntity>> getMailsByLabel(String labelId) {
+        return repository.getMailsByLabel(labelId);
+    }
+
 }

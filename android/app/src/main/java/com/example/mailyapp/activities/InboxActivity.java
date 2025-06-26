@@ -165,7 +165,27 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         lvLabels.setOnItemClickListener((parent, view, position, id) -> {
             markSelectedItem(view); // Now shared logic
             LabelEntity clickedLabel = (LabelEntity) parent.getItemAtPosition(position);
-            // Handle label click (e.g., filter mail list)
+            markSelectedItem(view);
+            currentFolder = null; // reset folder filter
+
+            mailViewModel.getMailsByLabel(clickedLabel.getId()).observe(this, entities -> {
+                if (entities == null) return;
+
+                List<Mail> mails = new ArrayList<>();
+                for (MailEntity entity : entities) {
+                    mails.add(entity.toModel());
+                }
+
+                if (mailAdapter == null) {
+                    mailAdapter = new MailAdapter(mails, this);
+                    mailRecyclerView.setAdapter(mailAdapter);
+                } else {
+                    mailAdapter.updateData(mails);
+                }
+            });
+
+            drawerLayout.closeDrawer(GravityCompat.START);
+
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 

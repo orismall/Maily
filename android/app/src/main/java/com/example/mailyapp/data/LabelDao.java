@@ -28,4 +28,8 @@ public interface LabelDao {
     void update(LabelEntity... labels);
     @Delete
     void delete(LabelEntity... labels);
+
+    @Query("SELECT * FROM labels WHERE id = :id")
+    LabelEntity getNow(String id);
+
 }
