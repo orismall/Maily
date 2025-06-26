@@ -64,9 +64,18 @@ public class MailViewModel extends AndroidViewModel {
     public void updateStarredFlag(String mailId, boolean isStarred) {
         repository.updateStarredFlag(mailId, isStarred);
     }
+
+    public void updateReadFlag(String mailId, boolean isRead) {
+        repository.updateReadFlag(mailId, isRead);
+    }
+
     public LiveData<List<MailEntity>> getLocalMailsByFolder(String folder) {
+        if ("starred".equalsIgnoreCase(folder)) {
+            return repository.getStarredMails();
+        }
         return repository.getMailsByFolder(folder);
     }
+
     public void refreshAllMails(Runnable onComplete) {
         repository.refreshAllMailsFromApi(onComplete);
     }

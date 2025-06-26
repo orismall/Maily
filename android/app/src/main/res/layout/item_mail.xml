@@ -55,7 +55,6 @@
             android:id="@+id/mailSubject"
             android:text="Subject of the email"
             android:textSize="14sp"
-            android:textStyle="bold"
             android:layout_marginTop="6dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />

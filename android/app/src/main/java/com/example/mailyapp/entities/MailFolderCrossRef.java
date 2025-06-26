@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey;
         tableName = "mail_folder",
         primaryKeys = {"mailId", "folder"}
 )
+
 public class MailFolderCrossRef {
 
     @NonNull

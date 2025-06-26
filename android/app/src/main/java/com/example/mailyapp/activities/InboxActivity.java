@@ -2,11 +2,9 @@ package com.example.mailyapp.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -26,7 +24,6 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.data.AppDatabase;
-import com.example.mailyapp.data.LabelDao;
 import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.models.Label;
@@ -36,7 +33,6 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.example.mailyapp.viewmodels.MailViewModel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -57,6 +53,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private MailViewModel mailViewModel;
     private String currentFolder = "inbox";
 
+    private androidx.lifecycle.LiveData<List<MailEntity>> currentMailLiveData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +61,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         setContentView(R.layout.activity_inbox);
 
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
-                        "MailyDB").allowMainThreadQueries().build();
+                "MailyDB").allowMainThreadQueries().build();
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -270,6 +267,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         mailRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
+
         mailViewModel.fetchFolder(currentFolder, 1);
         mailViewModel.getLocalMailsByFolder(currentFolder).observe(this, entities -> {
             if (entities == null) return;
@@ -295,7 +293,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
 
             labelViewModel.refreshFromApi(); // This already works fine
         });
-
 
 
         // SearchView setup (already inside the Toolbar)
@@ -328,12 +325,23 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
     }
+
     @Override
     public void onMailClick(Mail mail) {
-        Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
-        intent.putExtra("mail", mail);
+        if (mail.getType().equals("draft")) {
+            Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
+            intent.putExtra("isDraft", true);
+            intent.putExtra("draftId", mail.getId());
+            intent.putExtra("to", String.join(",", mail.getReceiver()));
+            intent.putExtra("subject", mail.getSubject());
+            intent.putExtra("body", mail.getContent());
+            startActivity(intent);
+        } else {
+            Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
+            intent.putExtra("mail", mail);
 
-        startActivity(intent);
+            startActivity(intent);
+        }
     }
 
     @Override
@@ -367,13 +375,18 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     }
 
     private void loadMailsForFolder(String folderName) {
-        mailViewModel.getLocalMailsByFolder(folderName).observe(this, entities -> {
+        if (currentMailLiveData != null) {
+            currentMailLiveData.removeObservers(this);
+            currentMailLiveData = null;
+        }
+        currentMailLiveData = mailViewModel.getLocalMailsByFolder(folderName);
+        currentMailLiveData.observe(this, entities -> {
             if (entities == null) return;
 
             List<Mail> mails = new ArrayList<>();
             for (MailEntity entity : entities) {
-                mails.add(entity.toModel());
-            }
+                 mails.add(entity.toModel());
+                }
 
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
@@ -404,4 +417,5 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             mailAdapter.setSearchQuery(query);
         });
     }
+
 }
