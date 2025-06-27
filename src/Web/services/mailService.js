@@ -354,7 +354,6 @@ async function markAsSpam(userId, mailId, blacklistUpdateFn) {
   const updates = {
     $pull: {
       'mails.inbox': { 'mail._id': mailObjectId },
-      'mails.sent': { 'mail._id': mailObjectId }
     },
     $addToSet: {
       'mails.spam': { mail, isRead, isStarred }

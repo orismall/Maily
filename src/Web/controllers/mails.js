@@ -57,13 +57,19 @@ async function sendMail(req, res) {
           subject,
           content,
           labels: [],
-          type: 'mail'
+          type: 'spam'
         });
         await mailDoc.save();
         const mailObj = mailDoc.toObject();
         await mailService.pushMailToFolder(sender._id, 'sent', mailObj, true);
         for (const u of users) await mailService.pushMailToFolder(u._id, 'spam', mailObj);
-        return res.status(201).json({ warning: 'Sent to spam (blacklisted content)' });
+        return res.status(201).json({
+          mail: mailObj,
+          isRead: false,
+          isStarred: false,
+          warning: 'Sent to spam (blacklisted content)'
+        });
+
       }
     }
 
