@@ -38,6 +38,7 @@
     <string name="BaseUrl">http://10.0.2.2:5001/api/</string>
     <string name="already_have_an_account">Already have an account?</string>
     <string name="sign_in">Sign in</string>
+    <string name="user_avatar">user avatar</string>
 
 
 </resources>

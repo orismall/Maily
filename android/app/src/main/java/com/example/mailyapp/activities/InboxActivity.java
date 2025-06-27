@@ -1,7 +1,10 @@
 package com.example.mailyapp.activities;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -25,8 +28,11 @@ import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.data.AppDatabase;
 import com.example.mailyapp.data.LabelDao;
+import com.example.mailyapp.data.UserDao;
 import com.example.mailyapp.entities.LabelEntity;
+import com.example.mailyapp.entities.UserEntity;
 import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.viewmodels.UserViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.example.mailyapp.viewmodels.MailViewModel;
@@ -43,6 +49,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private SearchView searchView;
     private AppDatabase db;
     private LabelDao labelDao;
+
+    private UserDao userDao;
     private View currentSelectedNavItem;
     private ArrayAdapter<LabelEntity> adapter;
     private ListView lvLabels;
@@ -60,6 +68,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
                 "MailyDB").allowMainThreadQueries().build();
         labelDao = db.labelDao();
+        userDao = db.userDao();
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -270,10 +279,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                             getSharedPreferences("session", MODE_PRIVATE).edit().clear().apply();
 
                             // Clear Room Database
-                            AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "MailyDB")
-                                    .allowMainThreadQueries()
-                                    .build();
-                            db.userDao().deleteAll();
+                            userDao.deleteAll();
 
                             // Go to LoginActivity with flag
                             Intent intent = new Intent(InboxActivity.this, LoginActivity.class);
@@ -285,6 +291,38 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                         .show();
             });
         }
+        UserViewModel userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        ImageView avatarImageView = findViewById(R.id.userAvatarImageView);
+
+        userViewModel.getLoggedInUserLive().observe(this, user -> {
+            if (user != null && user.avatar != null) {
+                String base64 = user.avatar;
+                if (base64.startsWith("data:image")) {
+                    base64 = base64.substring(base64.indexOf(",") + 1);
+                }
+                byte[] decodedString = Base64.decode(base64, Base64.DEFAULT);
+                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                avatarImageView.setImageBitmap(decodedByte);
+            } else {
+                avatarImageView.setImageResource(R.drawable.default_avatar);
+            }
+
+            avatarImageView.setOnClickListener(v -> {
+                if (user != null) {
+                    String info = "First name: " + user.firstName +"\n"
+                            + "Last name: " + user.lastName + "\n"
+                            + "Email: " + user.email;
+
+                    new androidx.appcompat.app.AlertDialog.Builder(InboxActivity.this)
+                            .setTitle("User Info")
+                            .setMessage(info)
+                            .setPositiveButton("X", null)
+                            .show();
+                } else {
+                    Toast.makeText(InboxActivity.this, "No user information available", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
 
     }
 
@@ -329,6 +367,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         listView.setLayoutParams(params);
         listView.requestLayout();
     }
-
+    
 
 }

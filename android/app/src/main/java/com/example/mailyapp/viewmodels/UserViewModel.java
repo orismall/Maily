@@ -124,9 +124,11 @@ public class UserViewModel extends AndroidViewModel {
                     User user = response.body();
                     UserEntity entity = ModelMapper.toEntity(user);
 
-                    new Thread(() -> db.userDao().insertUser(entity)).start();
-
-                    userLiveData.setValue(user);
+                    new Thread(() -> {
+                        db.userDao().deleteAll();
+                        db.userDao().insertUser(entity);
+                        userLiveData.postValue(user);
+                    }).start();
                 } else {
                     errorMessage.setValue("Failed to load user profile");
                 }
@@ -137,5 +139,8 @@ public class UserViewModel extends AndroidViewModel {
                 errorMessage.setValue("Error: " + t.getMessage());
             }
         });
+    }
+    public LiveData<UserEntity> getLoggedInUserLive() {
+        return db.userDao().getLoggedInUserLive();
     }
 }

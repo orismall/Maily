@@ -1,5 +1,6 @@
 package com.example.mailyapp.data;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -13,8 +14,10 @@ public interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertUser(UserEntity user);
 
-    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
-    UserEntity getUserByEmail(String email);
+    @Query("SELECT * FROM users LIMIT 1")
+    LiveData<UserEntity> getLoggedInUserLive();
 
     @Query("DELETE FROM users")
-    void deleteAll();}
+    void deleteAll();
+
+}
