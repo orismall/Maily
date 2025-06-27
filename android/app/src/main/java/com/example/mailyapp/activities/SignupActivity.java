@@ -141,7 +141,7 @@ public class SignupActivity extends BaseActivity {
             DatePickerDialog datePickerDialog = new DatePickerDialog(
                     SignupActivity.this,
                     (view, selectedYear, selectedMonth, selectedDay) -> {
-                        String date = String.format("%02d/%02d/%04d", selectedDay, selectedMonth + 1, selectedYear);
+                        String date = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay);
                         birthDateInput.setText(date);
                     },
                     year, month, day
