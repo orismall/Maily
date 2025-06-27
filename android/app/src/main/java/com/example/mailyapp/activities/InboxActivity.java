@@ -336,6 +336,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         MaterialButton fabCompose = findViewById(R.id.fabCompose);
         fabCompose.setOnClickListener(v -> {
             Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
+            intent.putExtra("folder", currentFolder);
             startActivity(intent);
         });
 
@@ -398,6 +399,19 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             });
         });
 
+
+        String folderFromIntent = getIntent().getStringExtra("folder");
+        if (folderFromIntent != null) {
+            currentFolder = folderFromIntent;
+        } else {
+            currentFolder = "inbox";
+        }
+
+        LinearLayout selectedNav = findViewById(getNavIdForFolder(currentFolder));
+        markSelectedItem(selectedNav);
+        loadMailsForFolder(currentFolder);
+
+
     }
 
     @Override
@@ -409,7 +423,9 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             intent.putExtra("to", String.join(",", mail.getReceiver()));
             intent.putExtra("subject", mail.getSubject());
             intent.putExtra("body", mail.getContent());
+            intent.putExtra("folder", currentFolder); // Pass current folder
             startActivity(intent);
+
         } else {
             Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
             intent.putExtra("mail", mail);
@@ -496,4 +512,17 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             mailAdapter.setSearchQuery(query);
         });
     }
+
+    private int getNavIdForFolder(String folderName) {
+        switch (folderName) {
+            case "inbox": return R.id.nav_inbox;
+            case "starred": return R.id.nav_starred;
+            case "sent": return R.id.nav_sent;
+            case "drafts": return R.id.nav_drafts;
+            case "spam": return R.id.nav_spam;
+            case "trash": return R.id.nav_trash;
+            default: return R.id.nav_inbox;
+        }
+    }
+
 }

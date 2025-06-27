@@ -30,6 +30,7 @@ public class ComposeMailActivity extends AppCompatActivity {
     private boolean isDraft = false;
     private String draftId = null;
     private MailViewModel mailViewModel;
+    private String currentFolder = "inbox"; // default fallback
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +53,7 @@ public class ComposeMailActivity extends AppCompatActivity {
         fromEmail.setFocusable(false);
 
         Intent intent = getIntent();
+        currentFolder = intent.getStringExtra("folder"); // <-- fetch folder from intent
         boolean isReply = intent.getBooleanExtra("isReply", false);
         boolean isForward = intent.getBooleanExtra("isForward", false);
         isDraft = intent.getBooleanExtra("isDraft", false);
@@ -115,7 +117,6 @@ public class ComposeMailActivity extends AppCompatActivity {
                             if (response.isSuccessful() && response.body() != null) {
                                 Mail updated = response.body();
                                 mailViewModel.insert(toEntity(updated));
-
                                 sendDraftAsMail(updated, updated.getId());
                             } else {
                                 Snackbar.make(rootView, "Failed to update draft before sending", Snackbar.LENGTH_LONG).show();
@@ -146,12 +147,12 @@ public class ComposeMailActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     Mail sentMail = response.body();
                     mailViewModel.insert(toEntity(sentMail));
-
                     mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
                     mailViewModel.insertFolderRef(sentMail.getId(), "sent");
 
                     Snackbar.make(rootView, "Mail sent successfully", Snackbar.LENGTH_SHORT).show();
-                    finish();
+
+                    goBackToInboxActivity();
                 } else {
                     Snackbar.make(rootView, "Failed to send mail (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                 }
@@ -171,13 +172,13 @@ public class ComposeMailActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     Mail sentMail = response.body();
                     mailViewModel.insert(toEntity(sentMail));
-
                     mailViewModel.removeMailFromAllFolders(draftId);
                     mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
                     mailViewModel.insertFolderRef(sentMail.getId(), "sent");
 
                     Snackbar.make(rootView, "Draft sent successfully", Snackbar.LENGTH_SHORT).show();
-                    finish();
+
+                    goBackToInboxActivity();
                 } else {
                     Snackbar.make(rootView, "Failed to send draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                 }
@@ -196,7 +197,7 @@ public class ComposeMailActivity extends AppCompatActivity {
         String body = etBody.getText().toString().trim();
 
         if (toInput.isEmpty() && subject.isEmpty() && body.isEmpty()) {
-            finish();
+            goBackToInboxActivity();
             return;
         }
 
@@ -216,20 +217,18 @@ public class ComposeMailActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<Mail> call, Response<Mail> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        Mail updated = response.body();
-                        mailViewModel.insert(toEntity(updated));
-
+                        mailViewModel.insert(toEntity(response.body()));
                         Snackbar.make(rootView, "Draft updated", Snackbar.LENGTH_SHORT).show();
                     } else {
                         Snackbar.make(rootView, "Failed to update draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                     }
-                    finish();
+                    goBackToInboxActivity();
                 }
 
                 @Override
                 public void onFailure(Call<Mail> call, Throwable t) {
                     Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
-                    finish();
+                    goBackToInboxActivity();
                 }
             });
         } else {
@@ -237,27 +236,33 @@ public class ComposeMailActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<Mail> call, Response<Mail> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        Mail savedDraft = response.body();
-                        draftId = savedDraft.getId();
+                        draftId = response.body().getId();
                         isDraft = true;
-
-                        mailViewModel.insert(toEntity(savedDraft));
-                        mailViewModel.insertFolderRef(savedDraft.getId(), "drafts");
+                        mailViewModel.insert(toEntity(response.body()));
+                        mailViewModel.insertFolderRef(draftId, "drafts");
 
                         Snackbar.make(rootView, "Draft saved", Snackbar.LENGTH_SHORT).show();
                     } else {
                         Snackbar.make(rootView, "Failed to save draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                     }
-                    finish();
+                    goBackToInboxActivity();
                 }
 
                 @Override
                 public void onFailure(Call<Mail> call, Throwable t) {
                     Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
-                    finish();
+                    goBackToInboxActivity();
                 }
             });
         }
+    }
+
+    private void goBackToInboxActivity() {
+        Intent backIntent = new Intent(ComposeMailActivity.this, InboxActivity.class);
+        backIntent.putExtra("folder", currentFolder);
+        backIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(backIntent);
+        finish();
     }
 
     private MailEntity toEntity(Mail mail) {
