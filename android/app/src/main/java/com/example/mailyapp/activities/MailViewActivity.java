@@ -91,6 +91,18 @@ public class MailViewActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        replyInlineButton.setOnClickListener(v -> {
+            if (mail == null) return;
+
+            Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
+            intent.putExtra("isReply", true);
+            intent.putExtra("originalSender", mail.getSender());
+            intent.putExtra("originalSubject", mail.getSubject());
+            intent.putExtra("originalBody", mail.getContent());
+            startActivity(intent);
+        });
+
+
         forwardButton.setOnClickListener(view -> {
             if (mail == null) return;
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
