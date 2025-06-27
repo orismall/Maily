@@ -1,6 +1,7 @@
 package com.example.mailyapp.activities;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -80,6 +81,37 @@ public class MailViewActivity extends AppCompatActivity {
             }
         }
 
+        replyButton.setOnClickListener(v -> {
+            if (mail == null) return;
+            Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
+            intent.putExtra("isReply", true);
+            intent.putExtra("originalSender", mail.getSender());
+            intent.putExtra("originalSubject", mail.getSubject());
+            intent.putExtra("originalBody", mail.getContent());
+            startActivity(intent);
+        });
+
+        replyInlineButton.setOnClickListener(v -> {
+            if (mail == null) return;
+
+            Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
+            intent.putExtra("isReply", true);
+            intent.putExtra("originalSender", mail.getSender());
+            intent.putExtra("originalSubject", mail.getSubject());
+            intent.putExtra("originalBody", mail.getContent());
+            startActivity(intent);
+        });
+
+
+        forwardButton.setOnClickListener(view -> {
+            if (mail == null) return;
+            Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
+            intent.putExtra("isForward", true);
+            intent.putExtra("originalSubject", mail.getSubject());
+            intent.putExtra("originalBody", mail.getContent());
+            startActivity(intent);
+        });
+
         readUnreadButton.setOnClickListener(v -> {
             if (mail == null) return;
 
@@ -113,14 +145,27 @@ public class MailViewActivity extends AppCompatActivity {
             TextView forwardOption = popupView.findViewById(R.id.optionForward);
 
             replyOption.setOnClickListener(view -> {
-                Toast.makeText(this, "Reply selected", Toast.LENGTH_SHORT).show();
+                if (mail == null) return;
+                Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
+                intent.putExtra("isReply", true);
+                intent.putExtra("originalSender", mail.getSender());
+                intent.putExtra("originalSubject", mail.getSubject());
+                intent.putExtra("originalBody", mail.getContent());
+                startActivity(intent);
                 popupWindow.dismiss();
             });
 
+
             forwardOption.setOnClickListener(view -> {
-                Toast.makeText(this, "Forward selected", Toast.LENGTH_SHORT).show();
+                if (mail == null) return;
+                Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
+                intent.putExtra("isForward", true);
+                intent.putExtra("originalSubject", mail.getSubject());
+                intent.putExtra("originalBody", mail.getContent());
+                startActivity(intent);
                 popupWindow.dismiss();
             });
+
 
             popupWindow.showAsDropDown(moreOptionsButtonInline, -30, 0);
         });
@@ -136,6 +181,9 @@ public class MailViewActivity extends AppCompatActivity {
                     })
             );
         });
+
+
+
     }
 
     private void showLabelPopup() {

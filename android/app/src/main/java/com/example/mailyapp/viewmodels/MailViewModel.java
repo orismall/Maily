@@ -14,6 +14,8 @@ import com.example.mailyapp.repositories.MailRepository;
 import java.util.List;
 import java.util.function.Consumer;
 
+import retrofit2.Callback;
+
 public class MailViewModel extends AndroidViewModel {
 
     private final MailRepository repository;
@@ -98,6 +100,30 @@ public class MailViewModel extends AndroidViewModel {
 
     public LiveData<List<MailEntity>> searchMails(String query) {
         return repository.searchMails(query);
+    }
+
+    public void sendMail(Mail mail, Callback<Mail> callback) {
+        repository.sendMail(mail, callback);
+    }
+
+    public void createDraft(Mail draft, Callback<Mail> callback) {
+        repository.createDraft(draft, callback);
+    }
+
+    public void updateDraft(String draftId, Mail updatedDraft, Callback<Mail> callback) {
+        repository.updateDraft(draftId, updatedDraft, callback);
+    }
+
+    public void sendDraftAsMail(String draftId, Callback<Mail> callback) {
+        repository.sendDraftAsMail(draftId, callback);
+    }
+
+    public void insertFolderRef(String mailId, String folder) {
+        repository.insertFolderRef(mailId, folder);
+    }
+
+    public void removeMailFromAllFolders(String mailId) {
+        repository.removeMailFromAllFolders(mailId);
     }
 
 
