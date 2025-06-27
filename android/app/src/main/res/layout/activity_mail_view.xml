@@ -44,6 +44,16 @@
                     android:orientation="horizontal">
 
                     <ImageButton
+                        android:id="@+id/btnRestore"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Restore"
+                        android:src="@drawable/ic_restore"
+                        android:visibility="gone" />
+
+
+                    <ImageButton
                         android:id="@+id/btnTrash"
                         android:layout_width="48dp"
                         android:layout_height="48dp"

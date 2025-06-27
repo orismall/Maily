@@ -32,9 +32,8 @@ public class MailViewActivity extends AppCompatActivity {
     private MailViewModel mailViewModel;
     private LabelViewModel labelViewModel;
     private Mail currentMail;
-
     private TextView subjectTextView, fromTextView, bodyTextView;
-    private ImageButton backButton, trashButton, spamButton, readUnreadButton, moreOptionsButtonTop;
+    private ImageButton backButton, trashButton, restoreButton, spamButton, readUnreadButton, moreOptionsButtonTop;
     private ImageButton replyInlineButton, moreOptionsButtonInline, starButton;
     private MaterialButton replyButton, forwardButton;
     private Mail mail;
@@ -56,6 +55,7 @@ public class MailViewActivity extends AppCompatActivity {
         // Bind views
         backButton = findViewById(R.id.btnBack);
         trashButton = findViewById(R.id.btnTrash);
+        restoreButton = findViewById(R.id.btnRestore);
         spamButton = findViewById(R.id.btnSpam);
         readUnreadButton = findViewById(R.id.btnReadUnread);
         moreOptionsButtonTop = findViewById(R.id.btnMoreTop);
@@ -70,6 +70,8 @@ public class MailViewActivity extends AppCompatActivity {
 
         // Load mail data
         mail = (Mail) getIntent().getSerializableExtra("mail");
+        boolean isTrash = mail != null && "trash".equalsIgnoreCase(mail.getType());
+
         if (mail != null) {
             subjectTextView.setText(mail.getSubject());
             fromTextView.setText(mail.getSender());
@@ -79,10 +81,72 @@ public class MailViewActivity extends AppCompatActivity {
                 mail.setRead(true);
                 viewModel.updateReadFlag(mail.getId(), true);
             }
+
+            if (mail.isStarred()) {
+                starButton.setImageResource(R.drawable.ic_star_filled);
+            } else {
+                starButton.setImageResource(R.drawable.ic_star);
+            }
+
         }
+
+        if (isTrash) {
+            restoreButton.setVisibility(View.VISIBLE);
+            restoreButton.setOnClickListener(v -> {
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Restore Mail")
+                        .setMessage("Are you sure you want to restore this mail?")
+                        .setPositiveButton("Restore", (dialog, which) -> {
+                            mailViewModel.restoreFromTrash(mail.getId(),
+                                    () -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Mail restored", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }),
+                                    error -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Failed to restore mail", Toast.LENGTH_SHORT).show();
+                                    })
+                            );
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
+
+        } else {
+            restoreButton.setVisibility(View.GONE);
+        }
+
+
+        spamButton.setOnClickListener(v -> {
+            if (mail == null) return;
+            if (isTrash) {
+                Toast.makeText(this, "Cannot spam a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // Handle spam ------------------ //
+        });
+
+        starButton.setOnClickListener(v -> {
+            if (mail == null) return;
+
+            if ("trash".equalsIgnoreCase(mail.getType())) {
+                Toast.makeText(this, "Cannot star a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            boolean newState = !mail.isStarred();
+            mail.setStarred(newState);
+            mailViewModel.updateStarredFlag(mail.getId(), newState);
+
+            starButton.setImageResource(newState ? R.drawable.ic_star_filled : R.drawable.ic_star);
+        });
+
 
         replyButton.setOnClickListener(v -> {
             if (mail == null) return;
+            if (isTrash) {
+                Toast.makeText(this, "Cannot reply to a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
             intent.putExtra("isReply", true);
             intent.putExtra("originalSender", mail.getSender());
@@ -93,7 +157,10 @@ public class MailViewActivity extends AppCompatActivity {
 
         replyInlineButton.setOnClickListener(v -> {
             if (mail == null) return;
-
+            if (isTrash) {
+                Toast.makeText(this, "Cannot reply to a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
             intent.putExtra("isReply", true);
             intent.putExtra("originalSender", mail.getSender());
@@ -105,6 +172,10 @@ public class MailViewActivity extends AppCompatActivity {
 
         forwardButton.setOnClickListener(view -> {
             if (mail == null) return;
+            if (isTrash) {
+                Toast.makeText(this, "Cannot forward a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
             intent.putExtra("isForward", true);
             intent.putExtra("originalSubject", mail.getSubject());
@@ -146,6 +217,10 @@ public class MailViewActivity extends AppCompatActivity {
 
             replyOption.setOnClickListener(view -> {
                 if (mail == null) return;
+                if (isTrash) {
+                    Toast.makeText(this, "Cannot reply to a trashed mail.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
                 intent.putExtra("isReply", true);
                 intent.putExtra("originalSender", mail.getSender());
@@ -158,6 +233,10 @@ public class MailViewActivity extends AppCompatActivity {
 
             forwardOption.setOnClickListener(view -> {
                 if (mail == null) return;
+                if (isTrash) {
+                    Toast.makeText(this, "Cannot forward a trashed mail.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
                 intent.putExtra("isForward", true);
                 intent.putExtra("originalSubject", mail.getSubject());
@@ -171,22 +250,52 @@ public class MailViewActivity extends AppCompatActivity {
         });
 
         trashButton.setOnClickListener(v -> {
-            mailViewModel.moveToTrash(currentMail.getId(),
-                    () -> runOnUiThread(() -> {
-                        Toast.makeText(this, "Moved to trash", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }),
-                    error -> runOnUiThread(() -> {
-                        Toast.makeText(this, "Failed to move to trash", Toast.LENGTH_SHORT).show();
-                    })
-            );
+            if ("trash".equalsIgnoreCase(currentMail.getType())) {
+                // 🗑 Permanently delete
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Delete Permanently")
+                        .setMessage("Are you sure you want to permanently delete this mail?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            mailViewModel.permanentlyDeleteFromTrash(currentMail.getId(),
+                                    () -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Mail permanently deleted", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }),
+                                    error -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Failed to delete mail", Toast.LENGTH_SHORT).show();
+                                    })
+                            );
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            } else {
+                // 🗃 Move to trash
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Move to Trash")
+                        .setMessage("Are you sure you want to move this mail to trash?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            mailViewModel.moveToTrash(currentMail.getId(),
+                                    () -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Moved to trash", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }),
+                                    error -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Failed to move to trash", Toast.LENGTH_SHORT).show();
+                                    })
+                            );
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
         });
-
-
 
     }
 
     private void showLabelPopup() {
+        if ("trash".equalsIgnoreCase(currentMail.getType())) {
+            Toast.makeText(this, "Cannot label a trashed mail.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         View popupView = getLayoutInflater().inflate(R.layout.mail_more_menu, null);
         LinearLayout container = popupView.findViewById(R.id.label_container);
 

@@ -126,5 +126,11 @@ public class MailViewModel extends AndroidViewModel {
         repository.removeMailFromAllFolders(mailId);
     }
 
+    public void permanentlyDeleteFromTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.permanentlyDeleteFromTrash(mailId, onSuccess, onFailure);
+    }
 
+    public void restoreFromTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.restoreFromTrash(mailId, onSuccess, onFailure);
+    }
 }

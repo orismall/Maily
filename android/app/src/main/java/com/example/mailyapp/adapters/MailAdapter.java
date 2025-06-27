@@ -92,13 +92,29 @@ public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MailViewHolder
         }
 
         holder.starIcon.setOnClickListener(v -> {
+            if ("trash".equalsIgnoreCase(mail.getType())) {
+                listener.onToggleStar(mail.getId(), mail.isStarred()); // notify activity to show toast
+                return;
+            }
             boolean newState = !mail.isStarred();
             mail.setStarred(newState);
             listener.onToggleStar(mail.getId(), newState);
             notifyItemChanged(holder.getAdapterPosition());
         });
 
+
     }
+
+    public Mail getMailById(String mailId) {
+        if (mailList == null) return null;
+        for (Mail mail : mailList) {
+            if (mail.getId().equals(mailId)) {
+                return mail;
+            }
+        }
+        return null;
+    }
+
 
     // Returns the total number of mails
     @Override

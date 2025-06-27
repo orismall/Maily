@@ -69,6 +69,7 @@ async function updateSentMail(userId, mailId, updates) {
   );
 }
 
+
 // Delete a mail and move to trash
 async function moveToTrash(userId, mailId) {
   const user = await findUserById(userId);
@@ -85,6 +86,15 @@ async function moveToTrash(userId, mailId) {
     const match = user.mails[folder].find(item => item.mail._id?.equals(mailId));
     if (match) {
       foundMail = match.mail;
+
+      // Update central Mail document type
+      await Mail.updateOne(
+        { _id: foundMail._id },
+        { $set: { type: 'trash' } }
+      );
+
+      // Also update the in-memory object before pushing into trash
+      foundMail.type = 'trash';
       break;
     }
   }
@@ -120,6 +130,8 @@ async function moveToTrash(userId, mailId) {
 
   return result.modifiedCount > 0;
 }
+
+
 
 async function addLabelToMail(userId, mailId, labelId) {
   const folders = ['inbox', 'sent', 'drafts', 'trash', 'spam'];
@@ -202,23 +214,44 @@ async function restoreMailFromTrash(userId, mailId) {
 
   const { mail, isRead, isStarred } = user.mails.trash[index];
   const entry = { mail, isRead, isStarred };
+  const mailObjectId = new mongoose.Types.ObjectId(mailId);
 
   const isSender = mail.sender === user.email;
   const isReceiver = mail.receiver.includes(user.email);
 
-  const updates = { $pull: { 'mails.trash': { 'mail._id': new mongoose.Types.ObjectId(mailId) } } };
+  // Determine new type
+  const newType = isSender && isReceiver
+    ? 'mail'
+    : isSender
+    ? 'sent'
+    : 'inbox';
+
+  // Update central Mail document type
+  await Mail.updateOne(
+    { _id: mailObjectId },
+    { $set: { type: newType } }
+  );
+
+  // Update in-memory embedded mail too
+  entry.mail.type = newType;
+
+  const updates = {
+    $pull: { 'mails.trash': { 'mail._id': mailObjectId } },
+    $push: {}
+  };
+
   if (isSender && isReceiver) {
-    updates.$push = {
-      'mails.inbox': entry,
-      'mails.sent': entry
-    };
+    updates.$push['mails.inbox'] = entry;
+    updates.$push['mails.sent'] = entry;
   } else if (isSender) {
-    updates.$push = { 'mails.sent': entry };
+    updates.$push['mails.sent'] = entry;
   } else if (isReceiver) {
-    updates.$push = { 'mails.inbox': entry };
+    updates.$push['mails.inbox'] = entry;
   }
 
   await User.updateOne({ _id: userId }, updates);
+
+  // ✅ Restore labels
   if (mail.labels?.length > 0) {
     await Promise.all(
       mail.labels.map(labelId =>
@@ -228,14 +261,16 @@ async function restoreMailFromTrash(userId, mailId) {
         )
       )
     );
-    // Also ensure mail document has correct labels (in case it's restored without them)
     await Mail.updateOne(
       { _id: mail._id },
       { $addToSet: { labels: { $each: mail.labels || [] } } }
     );
   }
+
   return true;
 }
+
+
 
 async function deleteFromTrash(userId, mailId) {
   const result = await User.updateOne(

@@ -1,6 +1,7 @@
 package com.example.mailyapp.repositories;
 
 import android.app.Application;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
@@ -73,12 +74,12 @@ public class MailRepository {
                         List<String> updatedMailIds = new ArrayList<>(label.getMailIds());
                         updatedMailIds.remove(mailId);
                         label.setMailIds(updatedMailIds);
-                        labelDao.update(label); // ✅ Use update instead of insert
+                        labelDao.update(label); //
                     }
                 }
             }
-
-            // 💥 Delete mail from Room
+            mailDao.removeMailFromAllFolders(mailId);
+            // Delete mail from Room
             mailDao.deleteById(mailId);
         });
     }
@@ -234,7 +235,7 @@ public class MailRepository {
             mailDao.updateReadFlag(mailId, isRead);
 
             MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
-            MailFlagUpdate update = new MailFlagUpdate(null, isRead); // null במקום isStarred
+            MailFlagUpdate update = new MailFlagUpdate(null, isRead);
             mailApi.updateMailFlags(mailId, update).enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -284,33 +285,41 @@ public class MailRepository {
 
     public void moveToTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
         MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+
         api.deleteMail(mailId).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     executorService.execute(() -> {
                         MailEntity mail = mailDao.getNow(mailId);
-                        if (mail != null && mail.getLabels() != null) {
-                            List<String> labelIds = new ArrayList<>(mail.getLabels());
-                            LabelDao labelDao = AppDatabase.getInstance(application).labelDao();
+                        if (mail != null) {
+                            mail.setType("trash");
 
-                            // 1. Remove mailId from each label
-                            for (String labelId : labelIds) {
-                                LabelEntity label = labelDao.getNow(labelId);
-                                if (label != null && label.getMailIds() != null && label.getMailIds().contains(mailId)) {
-                                    List<String> updatedMailIds = new ArrayList<>(label.getMailIds());
-                                    updatedMailIds.remove(mailId);
-                                    label.setMailIds(updatedMailIds);
-                                    labelDao.insert(label); // assuming REPLACE behavior here
+                            // Remove mail from labels
+                            if (mail.getLabels() != null) {
+                                List<String> labelIds = new ArrayList<>(mail.getLabels());
+                                LabelDao labelDao = AppDatabase.getInstance(application).labelDao();
+
+                                for (String labelId : labelIds) {
+                                    LabelEntity label = labelDao.getNow(labelId);
+                                    if (label != null && label.getMailIds() != null && label.getMailIds().contains(mailId)) {
+                                        List<String> updatedMailIds = new ArrayList<>(label.getMailIds());
+                                        updatedMailIds.remove(mailId);
+                                        label.setMailIds(updatedMailIds);
+                                        labelDao.update(label);
+                                    }
                                 }
                             }
 
-                            // 2. Remove all labelIds from the mail
-                            mail.setLabels(new ArrayList<>());
-                            mailDao.insert(mail); // update the mail with empty labels
-                        }
+                            mail.setLabels(new ArrayList<>());  // Clear mail's labels
+                            mailDao.removeMailFromAllFolders(mailId); // Also remove from folders
+                            mailDao.insert(mail); // Save updates (LiveData observers will react)
+                            mailDao.insertFolderRef(new MailFolderCrossRef(mailId, "trash"));
 
-                        onSuccess.run();
+                            onSuccess.run();
+                        } else {
+                            onFailure.accept(new Exception("Mail not found locally"));
+                        }
                     });
                 } else {
                     onFailure.accept(new Exception("Trash failed with code: " + response.code()));
@@ -323,6 +332,8 @@ public class MailRepository {
             }
         });
     }
+
+
 
 
     public void addLabelToMailLocally(String mailId, String labelId) {
@@ -375,6 +386,87 @@ public class MailRepository {
         MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
         mailApi.sendDraftAsMailWithResponse(draftId).enqueue(callback);
     }
+
+    public void permanentlyDeleteFromTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+
+        api.deleteTrashMail(mailId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    // Also delete from Room
+                    deleteById(mailId);
+                    onSuccess.run();
+                } else {
+                    onFailure.accept(new Exception("Failed with code: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
+
+    public void restoreFromTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+
+        api.restoreFromTrash(mailId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    executorService.execute(() -> {
+                        MailEntity mail = mailDao.getNow(mailId);
+                        if (mail != null) {
+                            mail.setType("mail");
+                            mailDao.insert(mail); // Save mail update (type)
+
+                            mailDao.removeMailFromAllFolders(mailId);
+
+                            String userEmail = getUserEmail();
+                            List<MailFolderCrossRef> refs = new ArrayList<>();
+
+                            if (userEmail.equalsIgnoreCase(mail.getSender())) {
+                                refs.add(new MailFolderCrossRef(mailId, "sent"));
+                            }
+
+                            if (mail.getReceiver() != null && mail.getReceiver().contains(userEmail)) {
+                                refs.add(new MailFolderCrossRef(mailId, "inbox"));
+                            }
+
+                            mailDao.insertFolderRefs(refs);
+
+                            MailEntity refreshed = mailDao.getNow(mailId);
+                            if (refreshed != null) {
+                                mailDao.insert(refreshed); // ⚡ Trigger Room observers
+                            }
+
+                            onSuccess.run();
+                        } else {
+                            onFailure.accept(new Exception("Mail not found in Room"));
+                        }
+                    });
+                } else {
+                    onFailure.accept(new Exception("Restore failed: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
+
+
+
+
+    private String getUserEmail() {
+        return application.getSharedPreferences("session", Application.MODE_PRIVATE)
+                .getString("user_email", "");
+    }
+
 
 
 }
