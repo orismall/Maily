@@ -112,8 +112,11 @@ public class ComposeMailActivity extends AppCompatActivity {
                     mailViewModel.updateDraft(draftId, updated, new Callback<Mail>() {
                         @Override
                         public void onResponse(Call<Mail> call, Response<Mail> response) {
-                            if (response.isSuccessful()) {
-                                sendDraftAsMail(draftId);
+                            if (response.isSuccessful() && response.body() != null) {
+                                Mail updated = response.body();
+                                mailViewModel.insert(toEntity(updated));
+
+                                sendDraftAsMail(updated, updated.getId());
                             } else {
                                 Snackbar.make(rootView, "Failed to update draft before sending", Snackbar.LENGTH_LONG).show();
                             }
@@ -140,21 +143,13 @@ public class ComposeMailActivity extends AppCompatActivity {
         mailViewModel.sendMail(mail, new Callback<Mail>() {
             @Override
             public void onResponse(Call<Mail> call, Response<Mail> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     Mail sentMail = response.body();
-                    MailEntity entity = new MailEntity(
-                            sentMail.getId(),
-                            sentMail.getSender(),
-                            sentMail.getReceiver(),
-                            sentMail.getSubject(),
-                            sentMail.getContent(),
-                            sentMail.getDate(),
-                            sentMail.getLabels(),
-                            sentMail.getType(),
-                            sentMail.isRead(),
-                            sentMail.isStarred()
-                    );
-                    mailViewModel.insert(entity);
+                    mailViewModel.insert(toEntity(sentMail));
+
+                    mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
+                    mailViewModel.insertFolderRef(sentMail.getId(), "sent");
+
                     Snackbar.make(rootView, "Mail sent successfully", Snackbar.LENGTH_SHORT).show();
                     finish();
                 } else {
@@ -169,28 +164,15 @@ public class ComposeMailActivity extends AppCompatActivity {
         });
     }
 
-    private void sendDraftAsMail(String draftId) {
-        mailViewModel.sendDraftAsMail(draftId, new Callback<Mail>() {
+    private void sendDraftAsMail(Mail mail, String draftId) {
+        mailViewModel.sendMail(mail, new Callback<Mail>() {
             @Override
             public void onResponse(Call<Mail> call, Response<Mail> response) {
-                if (response.isSuccessful()) {
+                if (response.isSuccessful() && response.body() != null) {
                     Mail sentMail = response.body();
-
-                    MailEntity entity = new MailEntity(
-                            sentMail.getId(),
-                            sentMail.getSender(),
-                            sentMail.getReceiver(),
-                            sentMail.getSubject(),
-                            sentMail.getContent(),
-                            sentMail.getDate(),
-                            sentMail.getLabels(),
-                            sentMail.getType(),
-                            sentMail.isRead(),
-                            sentMail.isStarred()
-                    );
+                    mailViewModel.insert(toEntity(sentMail));
 
                     mailViewModel.removeMailFromAllFolders(draftId);
-                    mailViewModel.insert(entity);
                     mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
                     mailViewModel.insertFolderRef(sentMail.getId(), "sent");
 
@@ -233,21 +215,10 @@ public class ComposeMailActivity extends AppCompatActivity {
             mailViewModel.updateDraft(draftId, draft, new Callback<Mail>() {
                 @Override
                 public void onResponse(Call<Mail> call, Response<Mail> response) {
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body() != null) {
                         Mail updated = response.body();
-                        MailEntity entity = new MailEntity(
-                                updated.getId(),
-                                updated.getSender(),
-                                updated.getReceiver(),
-                                updated.getSubject(),
-                                updated.getContent(),
-                                updated.getDate(),
-                                updated.getLabels(),
-                                updated.getType(),
-                                updated.isRead(),
-                                updated.isStarred()
-                        );
-                        mailViewModel.insert(entity);
+                        mailViewModel.insert(toEntity(updated));
+
                         Snackbar.make(rootView, "Draft updated", Snackbar.LENGTH_SHORT).show();
                     } else {
                         Snackbar.make(rootView, "Failed to update draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
@@ -265,24 +236,12 @@ public class ComposeMailActivity extends AppCompatActivity {
             mailViewModel.createDraft(draft, new Callback<Mail>() {
                 @Override
                 public void onResponse(Call<Mail> call, Response<Mail> response) {
-                    if (response.isSuccessful()) {
+                    if (response.isSuccessful() && response.body() != null) {
                         Mail savedDraft = response.body();
                         draftId = savedDraft.getId();
                         isDraft = true;
 
-                        MailEntity entity = new MailEntity(
-                                savedDraft.getId(),
-                                savedDraft.getSender(),
-                                savedDraft.getReceiver(),
-                                savedDraft.getSubject(),
-                                savedDraft.getContent(),
-                                savedDraft.getDate(),
-                                savedDraft.getLabels(),
-                                savedDraft.getType(),
-                                savedDraft.isRead(),
-                                savedDraft.isStarred()
-                        );
-                        mailViewModel.insert(entity);
+                        mailViewModel.insert(toEntity(savedDraft));
                         mailViewModel.insertFolderRef(savedDraft.getId(), "drafts");
 
                         Snackbar.make(rootView, "Draft saved", Snackbar.LENGTH_SHORT).show();
@@ -300,4 +259,20 @@ public class ComposeMailActivity extends AppCompatActivity {
             });
         }
     }
+
+    private MailEntity toEntity(Mail mail) {
+        return new MailEntity(
+                mail.getId(),
+                mail.getSender(),
+                mail.getReceiver(),
+                mail.getSubject(),
+                mail.getContent(),
+                mail.getDate(),
+                mail.getLabels(),
+                mail.getType(),
+                mail.isRead(),
+                mail.isStarred()
+        );
+    }
+
 }
