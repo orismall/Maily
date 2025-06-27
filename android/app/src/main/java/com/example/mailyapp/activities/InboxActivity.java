@@ -420,8 +420,16 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
 
     @Override
     public void onToggleStar(String mailId, boolean isStarred) {
+        Mail mail = mailAdapter.getMailById(mailId);
+        if (mail != null && "trash".equals(mail.getType())) {
+            Toast.makeText(this, "Cannot star a trashed mail.", Toast.LENGTH_SHORT).show();
+            mailAdapter.notifyDataSetChanged(); // Revert star UI immediately
+            return;
+        }
+
         mailViewModel.updateStarredFlag(mailId, isStarred);
     }
+
 
     private void markSelectedItem(View selected) {
         if (currentSelectedNavItem != null) {

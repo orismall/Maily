@@ -44,10 +44,10 @@ public interface MailDao {
     void updateReadFlag(String mailId, boolean isRead);
 
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertFolderRef(MailFolderCrossRef ref);
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertFolderRefs(List<MailFolderCrossRef> refs);
 
     @Query("DELETE FROM mail_folder WHERE mailId = :mailId AND folder = :folder")
