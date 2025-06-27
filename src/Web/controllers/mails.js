@@ -80,7 +80,7 @@ async function sendMail(req, res) {
 
     await mailService.pushMailToFolder(sender._id, 'sent', mailObj, true);
     for (const u of users) await mailService.pushMailToFolder(u._id, 'inbox', mailObj);
-    res.status(201).location(`/api/mails/${mailObj._id}`).end();
+    res.status(201).json(mailObj);
   });
 }
 

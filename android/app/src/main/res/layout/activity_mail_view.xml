@@ -6,11 +6,14 @@
     android:background="@android:color/white">
 
     <!-- Scrollable content -->
+
+    <!-- Fixed bottom buttons -->
     <ScrollView
         android:id="@+id/mailScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/bottomButtons">
+        android:layout_above="@+id/bottomButtons"
+        android:layout_marginBottom="-12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -28,49 +31,49 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_alignParentStart="true"
-                    android:src="@drawable/ic_back"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Back"
-                    android:background="?attr/selectableItemBackgroundBorderless" />
+                    android:src="@drawable/ic_back" />
 
                 <LinearLayout
                     android:id="@+id/rightButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <ImageButton
                         android:id="@+id/btnTrash"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:src="@drawable/ic_trash"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Delete"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+                        android:src="@drawable/ic_trash" />
 
                     <ImageButton
                         android:id="@+id/btnSpam"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:src="@drawable/ic_spam"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Spam"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+                        android:src="@drawable/ic_spam" />
 
                     <ImageButton
                         android:id="@+id/btnReadUnread"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:src="@drawable/ic_read_unread"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="Read/Unread"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+                        android:src="@drawable/ic_read_unread" />
 
                     <ImageButton
                         android:id="@+id/btnMoreTop"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:src="@drawable/ic_dots"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="More"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+                        android:src="@drawable/ic_dots" />
                 </LinearLayout>
             </RelativeLayout>
 
@@ -78,11 +81,11 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="12dp"
                 android:paddingTop="8dp"
-                android:paddingBottom="4dp"
-                android:gravity="center_vertical">
+                android:paddingBottom="4dp">
 
                 <TextView
                     android:id="@+id/mailSubject"
@@ -90,28 +93,28 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Subject"
+                    android:textColor="#000000"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="#000000"
                     app:fontFamily="@font/roboto" />
 
                 <ImageButton
                     android:id="@+id/btnStar"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:src="@drawable/ic_star"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Star" />
+                    android:contentDescription="Star"
+                    android:src="@drawable/ic_star" />
             </LinearLayout>
 
             <!-- Sender + reply + more -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="12dp"
-                android:paddingVertical="8dp"
-                android:gravity="center_vertical">
+                android:paddingVertical="8dp">
 
                 <TextView
                     android:id="@+id/mailFrom"
@@ -119,25 +122,25 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="sender@example.com"
-                    android:textSize="16sp"
                     android:textColor="#000000"
+                    android:textSize="16sp"
                     app:fontFamily="@font/roboto" />
 
                 <ImageButton
                     android:id="@+id/btnReplyInline"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:src="@drawable/ic_reply"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Reply" />
+                    android:contentDescription="Reply"
+                    android:src="@drawable/ic_reply" />
 
                 <ImageButton
                     android:id="@+id/btnMoreInline"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:src="@drawable/ic_dots"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="More options" />
+                    android:contentDescription="More options"
+                    android:src="@drawable/ic_dots" />
             </LinearLayout>
 
             <!-- Email body -->
@@ -145,17 +148,16 @@
                 android:id="@+id/mailBody"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Email body goes here"
-                android:textSize="16sp"
                 android:lineSpacingExtra="4dp"
                 android:paddingHorizontal="12dp"
                 android:paddingBottom="24dp"
+                android:text="Email body goes here"
                 android:textColor="#000000"
+                android:textSize="16sp"
                 app:fontFamily="@font/roboto" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- Fixed bottom buttons -->
     <LinearLayout
         android:id="@+id/bottomButtons"
         android:layout_width="match_parent"

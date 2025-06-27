@@ -1,6 +1,9 @@
 const mailService = require('../services/mailService');
 const isLoggedIn = require('../utils/isLoggedIn');
 const { sendMail } = require('./mails');
+const mongoose = require('mongoose');
+const mailSchema = require('../models/mails');
+const Mail = mongoose.model('Mail', mailSchema);
 
 async function createDraft(req, res) {
   await isLoggedIn(req, res, async () => {
@@ -17,11 +20,19 @@ async function createDraft(req, res) {
       labels: [],
     };
 
-    const success = await mailService.createDraft(req.user._id, mail);
-    if (success) {
-      res.status(201).location('/api/drafts').end();
-    } else {
-      res.status(500).json({ error: 'Failed to save draft' });
+    try {
+      const mailDoc = new Mail(mail);
+      await mailDoc.save();
+
+      const pushSuccess = await mailService.pushMailToFolder(req.user._id, 'drafts', mailDoc.toObject(), true);
+      if (!pushSuccess) {
+        return res.status(409).json({ error: 'Draft already exists' });
+      }
+
+      res.status(201).json(mailDoc);
+    } catch (err) {
+      console.error('Failed to create draft:', err);
+      res.status(500).json({ error: 'Failed to create draft' });
     }
   });
 }

@@ -13,7 +13,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
@@ -33,12 +32,17 @@ import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.UserEntity;
 import com.example.mailyapp.models.Mail;
 import com.example.mailyapp.viewmodels.UserViewModel;
+import com.example.mailyapp.entities.MailEntity;
+import com.example.mailyapp.models.Label;
+import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.viewmodels.LabelViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.navigation.NavigationView;
 import com.example.mailyapp.viewmodels.MailViewModel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 
 public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMailClickListener {
 
@@ -49,16 +53,17 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private SearchView searchView;
     private AppDatabase db;
     private LabelDao labelDao;
-
     private UserDao userDao;
+
     private View currentSelectedNavItem;
     private ArrayAdapter<LabelEntity> adapter;
     private ListView lvLabels;
-
+    private LabelViewModel labelViewModel;
     List<LabelEntity> labels;
     private MailViewModel mailViewModel;
     private String currentFolder = "inbox";
 
+    private androidx.lifecycle.LiveData<List<MailEntity>> currentMailLiveData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,13 +80,24 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
+        labelViewModel = new ViewModelProvider(this).get(LabelViewModel.class);
+
+        // Initially load labels from Room (no API call)
+        labels = new ArrayList<>();
+
+        labelViewModel.getAllLabels().observe(this, updatedLabels -> {
+            labels.clear();
+            labels.addAll(updatedLabels);
+            adapter.notifyDataSetChanged();
+            justifyListViewHeightBasedOnChildren(lvLabels);
+        });
+
         // Setup Drawer (sideBar)
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
         // Find the ListView from the navigation drawer
         lvLabels = navigationView.findViewById(R.id.lv_labels);
-        labels = labelDao.index();
-
+        labels = new ArrayList<>();
         adapter = new ArrayAdapter<LabelEntity>(
                 this, R.layout.item_label, R.id.label_name, labels
         ) {
@@ -102,9 +118,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                 .setTitle("Delete Label")
                                 .setMessage("Are you sure you want to delete this label?")
                                 .setPositiveButton("Delete", (dialog, which) -> {
-                                    labelDao.delete(label);
-                                    labels.remove(label);
-                                    notifyDataSetChanged();
+                                    labelViewModel.deleteById(label.getId());
+
                                     justifyListViewHeightBasedOnChildren(lvLabels);
                                     Toast.makeText(InboxActivity.this, "Label deleted", Toast.LENGTH_SHORT).show();
                                 })
@@ -123,9 +138,22 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                     String newName = input.getText().toString().trim();
                                     if (!newName.isEmpty()) {
                                         label.setName(newName);
-                                        labelDao.update(label);
-                                        notifyDataSetChanged();
-                                        Toast.makeText(InboxActivity.this, "Label updated", Toast.LENGTH_SHORT).show();
+
+                                        Label updatedLabel = new Label(label.getName());
+                                        updatedLabel.setId(label.getId());
+                                        updatedLabel.setColor(label.getColor());
+                                        updatedLabel.setMailIds(label.getMailIds());
+
+                                        labelViewModel.updateLabel(label.getId(), updatedLabel, result -> {
+                                            runOnUiThread(() -> {
+                                                if (result != null) {
+                                                    Toast.makeText(InboxActivity.this, "Label updated", Toast.LENGTH_SHORT).show();
+                                                } else {
+                                                    Toast.makeText(InboxActivity.this, "Failed to update label", Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
+                                        });
+
                                     } else {
                                         Toast.makeText(InboxActivity.this, "Label name can't be empty", Toast.LENGTH_SHORT).show();
                                     }
@@ -133,6 +161,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                 .setNegativeButton("Cancel", null)
                                 .show();
                     });
+
 
                 }
 
@@ -145,7 +174,27 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         lvLabels.setOnItemClickListener((parent, view, position, id) -> {
             markSelectedItem(view); // Now shared logic
             LabelEntity clickedLabel = (LabelEntity) parent.getItemAtPosition(position);
-            // Handle label click (e.g., filter mail list)
+            markSelectedItem(view);
+            currentFolder = null; // reset folder filter
+
+            mailViewModel.getMailsByLabel(clickedLabel.getId()).observe(this, entities -> {
+                if (entities == null) return;
+
+                List<Mail> mails = new ArrayList<>();
+                for (MailEntity entity : entities) {
+                    mails.add(entity.toModel());
+                }
+
+                if (mailAdapter == null) {
+                    mailAdapter = new MailAdapter(mails, this);
+                    mailRecyclerView.setAdapter(mailAdapter);
+                } else {
+                    mailAdapter.updateData(mails);
+                }
+            });
+
+            drawerLayout.closeDrawer(GravityCompat.START);
+
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
@@ -175,54 +224,54 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
             // TODO: handle inbox selection
             LinearLayout navInbox = findViewById(R.id.nav_inbox);
             currentFolder = "inbox";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navInbox);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_starred).setOnClickListener(v -> {
             // TODO: handle starred
             LinearLayout navStarred = findViewById(R.id.nav_starred);
             currentFolder = "starred";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navStarred);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_sent).setOnClickListener(v -> {
             // TODO: handle sent
             LinearLayout navSent = findViewById(R.id.nav_sent);
             currentFolder = "sent";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navSent);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_drafts).setOnClickListener(v -> {
             // TODO: handle drafts
             LinearLayout navDrafts = findViewById(R.id.nav_drafts);
             currentFolder = "drafts";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navDrafts);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_spam).setOnClickListener(v -> {
             // TODO: handle spam
             LinearLayout navSpam = findViewById(R.id.nav_spam);
             currentFolder = "spam";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navSpam);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         findViewById(R.id.nav_trash).setOnClickListener(v -> {
             // TODO: handle trash
             LinearLayout navTrash = findViewById(R.id.nav_trash);
             currentFolder = "trash";
-            mailViewModel.fetchFolder(currentFolder, 1);
             markSelectedItem(navTrash);
             drawerLayout.closeDrawer(GravityCompat.START);
+            loadMailsForFolder(currentFolder);
         });
 
         // Mail list setup
@@ -230,14 +279,31 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         mailRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
+
         mailViewModel.fetchFolder(currentFolder, 1);
-        mailViewModel.getRemoteMails().observe(this, mails -> {
+        mailViewModel.getLocalMailsByFolder(currentFolder).observe(this, entities -> {
+            if (entities == null) return;
+
+            List<Mail> mails = new ArrayList<>();
+            for (MailEntity entity : entities) {
+                mails.add(entity.toModel());
+            }
             if (mailAdapter == null) {
                 mailAdapter = new MailAdapter(mails, this);
                 mailRecyclerView.setAdapter(mailAdapter);
             } else {
                 mailAdapter.updateData(mails);
             }
+        });
+
+        SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.swipeRefresh);
+
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            mailViewModel.refreshAllMails(() -> {
+                runOnUiThread(() -> swipeRefreshLayout.setRefreshing(false));
+            });
+
+            labelViewModel.refreshFromApi(); // This already works fine
         });
 
 
@@ -249,16 +315,24 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // handle search submit
-                return false;
+                performSearch(query); // trigger search on submit
+                return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                // filter mails while typing
-                return false;
+                if (newText.isEmpty()) {
+                    loadMailsForFolder(currentFolder);
+                } else {
+                    performSearch(newText);
+                }
+                return true;
             }
+
         });
+
+
+
         MaterialButton fabCompose = findViewById(R.id.fabCompose);
         fabCompose.setOnClickListener(v -> {
             Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
@@ -327,20 +401,26 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        labels.clear();
-        labels.addAll(labelDao.index());
-        adapter.notifyDataSetChanged();
-        justifyListViewHeightBasedOnChildren(lvLabels);
+    public void onMailClick(Mail mail) {
+        if (mail.getType().equals("draft")) {
+            Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
+            intent.putExtra("isDraft", true);
+            intent.putExtra("draftId", mail.getId());
+            intent.putExtra("to", String.join(",", mail.getReceiver()));
+            intent.putExtra("subject", mail.getSubject());
+            intent.putExtra("body", mail.getContent());
+            startActivity(intent);
+        } else {
+            Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
+            intent.putExtra("mail", mail);
+
+            startActivity(intent);
+        }
     }
 
     @Override
-    public void onMailClick(Mail mail) {
-        Intent intent = new Intent(InboxActivity.this, MailViewActivity.class);
-        intent.putExtra("mail", mail);
-
-        startActivity(intent);
+    public void onToggleStar(String mailId, boolean isStarred) {
+        mailViewModel.updateStarredFlag(mailId, isStarred);
     }
 
     private void markSelectedItem(View selected) {
@@ -367,6 +447,45 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         listView.setLayoutParams(params);
         listView.requestLayout();
     }
-    
 
+    private void loadMailsForFolder(String folderName) {
+        mailViewModel.getLocalMailsByFolder(folderName).observe(this, entities -> {
+            if (entities == null) return;
+
+            List<Mail> mails = new ArrayList<>();
+            for (MailEntity entity : entities) {
+                mails.add(entity.toModel());
+            }
+
+            if (mailAdapter == null) {
+                mailAdapter = new MailAdapter(mails, this);
+                mailRecyclerView.setAdapter(mailAdapter);
+            } else {
+                mailAdapter.updateData(mails);
+            }
+
+            mailAdapter.setSearchQuery(null);
+        });
+    }
+
+
+    private void performSearch(String query) {
+        mailViewModel.searchMails(query).observe(this, entities -> {
+            if (entities == null) return;
+
+            List<Mail> mails = new ArrayList<>();
+            for (MailEntity entity : entities) {
+                mails.add(entity.toModel());
+            }
+
+            if (mailAdapter == null) {
+                mailAdapter = new MailAdapter(mails, this);
+                mailRecyclerView.setAdapter(mailAdapter);
+            } else {
+                mailAdapter.updateData(mails);
+            }
+
+            mailAdapter.setSearchQuery(query);
+        });
+    }
 }

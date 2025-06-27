@@ -46,6 +46,11 @@ public class LoginActivity extends BaseActivity {
 
         // Observe successful login response
         userViewModel.getLoginResponse().observe(this, response -> {
+            getSharedPreferences("session", MODE_PRIVATE)
+                    .edit()
+                    .putString("email", emailInput.getText().toString().trim())
+                    .apply();
+
             Intent i = new Intent(this, InboxActivity.class);
             i.putExtra("token", response.getToken());
             i.putExtra("user_id", response.getUserId());

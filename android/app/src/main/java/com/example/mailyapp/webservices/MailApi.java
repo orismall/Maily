@@ -1,6 +1,7 @@
 package com.example.mailyapp.webservices;
 
 import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.models.MailFlagUpdate;
 
 import java.util.List;
 
@@ -45,7 +46,19 @@ public interface MailApi {
 
     // Send a new mail
     @POST("mails")
-    Call<Void> sendMail(@Body Mail mail);
+    Call<Mail> sendMail(@Body Mail mail);
+
+    @POST("/api/drafts")
+    Call<Mail> createDraft(@Body Mail draft);
+
+    @POST("/api/drafts/{id}/send")
+    Call<Mail> sendDraftAsMail(@Path("id") String draftId);
+
+    @POST("/api/drafts/{id}/send")
+    Call<Mail> sendDraftAsMailWithResponse(@Path("id") String draftId);
+
+    @PATCH("/api/drafts/{id}")
+    Call<Mail> updateDraft(@Path("id") String id, @Body Mail draft);
 
     // Update mail flags (read/starred)
     @PATCH("mails/{id}")
@@ -90,4 +103,10 @@ public interface MailApi {
     // Get mails for a label
     @GET("labels/{labelId}/mails")
     Call<List<Mail>> getMailsByLabel(@Path("labelId") String labelId, @Query("page") int page);
+
+    @PATCH("mails/{id}")
+    Call<Void> updateMailFlags(@Path("id") String mailId, @Body MailFlagUpdate update);
+
+
+
 }
