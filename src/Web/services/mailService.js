@@ -428,20 +428,35 @@ async function getDraftById(userId, draftId) {
 }
 
 async function updateDraft(userId, draftId, updates) {
-  const setOps = {};
-  if (updates.receiver !== undefined) setOps['mails.drafts.$[d].mail.receiver'] = updates.receiver;
-  if (updates.subject !== undefined) setOps['mails.drafts.$[d].mail.subject'] = updates.subject;
-  if (updates.content !== undefined) setOps['mails.drafts.$[d].mail.content'] = updates.content;
-  if (updates.isStarred !== undefined) setOps['mails.drafts.$[d].isStarred'] = updates.isStarred;
-  setOps['mails.drafts.$[d].mail.date'] = new Date();
+  const mailUpdates = {};
+  if (updates.receiver !== undefined) mailUpdates.receiver = updates.receiver;
+  if (updates.subject !== undefined) mailUpdates.subject = updates.subject;
+  if (updates.content !== undefined) mailUpdates.content = updates.content;
+  mailUpdates.date = new Date();
 
-  const result = await User.updateOne(
+  const updatedMail = await Mail.findOneAndUpdate(
+    { _id: draftId, type: 'draft' },
+    { $set: mailUpdates },
+    { new: true }
+  );
+
+  if (!updatedMail) return null;
+
+  const setOps = {};
+  if (updates.isStarred !== undefined) {
+    setOps['mails.drafts.$[d].isStarred'] = updates.isStarred;
+  }
+  setOps['mails.drafts.$[d].mail.date'] = mailUpdates.date;
+
+  await User.updateOne(
     { _id: userId },
     { $set: setOps },
     { arrayFilters: [{ 'd.mail._id': new mongoose.Types.ObjectId(draftId) }] }
   );
-  return result.modifiedCount > 0;
+
+  return updatedMail;
 }
+
 
 async function deleteDraft(userId, draftId) {
   const result = await User.updateOne(
