@@ -9,10 +9,12 @@ import androidx.room.TypeConverters;
 
 import com.example.mailyapp.entities.LabelEntity;
 import com.example.mailyapp.entities.MailEntity;
+import com.example.mailyapp.entities.UserEntity;
+import com.example.mailyapp.utils.Converters;
 import com.example.mailyapp.entities.MailFolderCrossRef;
 import com.example.mailyapp.utils.Converters;
 
-@Database(entities = {MailEntity.class, LabelEntity.class, MailFolderCrossRef.class}, version = 8, exportSchema = false)
+@Database(entities = {MailEntity.class, LabelEntity.class, MailFolderCrossRef.class}, version = 9, exportSchema = false)
 
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase {
@@ -22,6 +24,8 @@ public abstract class AppDatabase extends RoomDatabase {
     // DAO getter
     public abstract MailDao mailDao();
     public abstract LabelDao labelDao();
+
+    public abstract UserDao userDao();
     // Singleton instance
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {

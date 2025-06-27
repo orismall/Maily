@@ -9,10 +9,13 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.mailyapp.data.AppDatabase;
+import com.example.mailyapp.entities.UserEntity;
 import com.example.mailyapp.models.LoginRequest;
 import com.example.mailyapp.models.LoginResponse;
 import com.example.mailyapp.models.User;
 import com.example.mailyapp.repositories.UserRepository;
+import com.example.mailyapp.utils.ModelMapper;
 
 import org.json.JSONObject;
 
@@ -23,14 +26,21 @@ import retrofit2.Response;
 public class UserViewModel extends AndroidViewModel {
 
     private final UserRepository repository;
+    private final AppDatabase db;
 
     private final MutableLiveData<Boolean> registrationSuccess = new MutableLiveData<>();
     private final MutableLiveData<LoginResponse> loginResponse = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    private final MutableLiveData<User> userLiveData = new MutableLiveData<>();
+
+    public LiveData<User> getUserLiveData() {
+        return userLiveData;
+    }
 
     public UserViewModel(@NonNull Application application) {
         super(application);
         this.repository = new UserRepository(application.getApplicationContext());
+        this.db = AppDatabase.getInstance(application.getApplicationContext());
     }
 
     public LiveData<Boolean> getRegistrationSuccess() {
@@ -70,14 +80,18 @@ public class UserViewModel extends AndroidViewModel {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    loginResponse.setValue(response.body());
+                    LoginResponse resp = response.body();
+                    loginResponse.setValue(resp);
 
                     SharedPreferences prefs = getApplication()
                             .getSharedPreferences("session", Context.MODE_PRIVATE);
                     prefs.edit()
-                            .putString("token", response.body().getToken())
-                            .putString("user_id", response.body().getUserId())
+                            .putString("token", resp.getToken())
+                            .putString("user_id", String.valueOf(resp.getUserId()))
                             .apply();
+
+                    String userId = resp.getUserId();
+                    fetchUserProfile(userId);
 
                 } else {
                     handleError(response, "Login failed");
@@ -101,5 +115,32 @@ public class UserViewModel extends AndroidViewModel {
             e.printStackTrace();
             errorMessage.setValue(defaultMsg + ": Unknown error");
         }
+    }
+    public void fetchUserProfile(String userId) {
+        repository.getUserById(userId, new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body();
+                    UserEntity entity = ModelMapper.toEntity(user);
+
+                    new Thread(() -> {
+                        db.userDao().deleteAll();
+                        db.userDao().insertUser(entity);
+                        userLiveData.postValue(user);
+                    }).start();
+                } else {
+                    errorMessage.setValue("Failed to load user profile");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<User> call, Throwable t) {
+                errorMessage.setValue("Error: " + t.getMessage());
+            }
+        });
+    }
+    public LiveData<UserEntity> getLoggedInUserLive() {
+        return db.userDao().getLoggedInUserLive();
     }
 }
