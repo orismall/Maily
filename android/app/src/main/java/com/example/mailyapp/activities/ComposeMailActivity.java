@@ -274,5 +274,4 @@ public class ComposeMailActivity extends AppCompatActivity {
                 mail.isStarred()
         );
     }
-
 }

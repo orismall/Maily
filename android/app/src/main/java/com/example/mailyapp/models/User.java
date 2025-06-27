@@ -21,4 +21,29 @@ public class User {
         this.birthdate = birthDate;
         this.avatar = image;
     }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getBirthdate() {
+        return birthdate;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
 }

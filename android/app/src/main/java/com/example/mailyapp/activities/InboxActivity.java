@@ -1,7 +1,10 @@
 package com.example.mailyapp.activities;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -10,7 +13,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
@@ -24,7 +26,12 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.mailyapp.R;
 import com.example.mailyapp.adapters.MailAdapter;
 import com.example.mailyapp.data.AppDatabase;
+import com.example.mailyapp.data.LabelDao;
+import com.example.mailyapp.data.UserDao;
 import com.example.mailyapp.entities.LabelEntity;
+import com.example.mailyapp.entities.UserEntity;
+import com.example.mailyapp.models.Mail;
+import com.example.mailyapp.viewmodels.UserViewModel;
 import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.models.Label;
 import com.example.mailyapp.models.Mail;
@@ -45,6 +52,9 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
     private MailAdapter mailAdapter;
     private SearchView searchView;
     private AppDatabase db;
+    private LabelDao labelDao;
+    private UserDao userDao;
+
     private View currentSelectedNavItem;
     private ArrayAdapter<LabelEntity> adapter;
     private ListView lvLabels;
@@ -62,6 +72,8 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
 
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class,
                 "MailyDB").allowMainThreadQueries().build();
+        labelDao = db.labelDao();
+        userDao = db.userDao();
 
         // Setup Toolbar (upperBar)
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -106,7 +118,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                                 .setTitle("Delete Label")
                                 .setMessage("Are you sure you want to delete this label?")
                                 .setPositiveButton("Delete", (dialog, which) -> {
-                                    labelViewModel.deleteById(label.getId()); // 🔁 Triggers Room + LiveData update automatically
+                                    labelViewModel.deleteById(label.getId());
 
                                     justifyListViewHeightBasedOnChildren(lvLabels);
                                     Toast.makeText(InboxActivity.this, "Label deleted", Toast.LENGTH_SHORT).show();
@@ -325,6 +337,65 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         fabCompose.setOnClickListener(v -> {
             Intent intent = new Intent(InboxActivity.this, ComposeMailActivity.class);
             startActivity(intent);
+        });
+
+        // Logout button logic
+        LinearLayout logoutButton = navigationView.findViewById(R.id.nav_logout);
+
+        if (logoutButton != null) {
+            logoutButton.setOnClickListener(v -> {
+                new androidx.appcompat.app.AlertDialog.Builder(InboxActivity.this)
+                        .setTitle("Logout")
+                        .setMessage("Are you sure you want to log out?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+
+                            // Clear SharedPreferences
+                            getSharedPreferences("session", MODE_PRIVATE).edit().clear().apply();
+
+                            // Clear Room Database
+                            userDao.deleteAll();
+
+                            // Go to LoginActivity with flag
+                            Intent intent = new Intent(InboxActivity.this, LoginActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            intent.putExtra("logged_out", true);
+                            startActivity(intent);
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
+        }
+        UserViewModel userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        ImageView avatarImageView = findViewById(R.id.userAvatarImageView);
+
+        userViewModel.getLoggedInUserLive().observe(this, user -> {
+            if (user != null && user.avatar != null) {
+                String base64 = user.avatar;
+                if (base64.startsWith("data:image")) {
+                    base64 = base64.substring(base64.indexOf(",") + 1);
+                }
+                byte[] decodedString = Base64.decode(base64, Base64.DEFAULT);
+                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                avatarImageView.setImageBitmap(decodedByte);
+            } else {
+                avatarImageView.setImageResource(R.drawable.default_avatar);
+            }
+
+            avatarImageView.setOnClickListener(v -> {
+                if (user != null) {
+                    String info = "First name: " + user.firstName +"\n"
+                            + "Last name: " + user.lastName + "\n"
+                            + "Email: " + user.email;
+
+                    new androidx.appcompat.app.AlertDialog.Builder(InboxActivity.this)
+                            .setTitle("User Info")
+                            .setMessage(info)
+                            .setPositiveButton("X", null)
+                            .show();
+                } else {
+                    Toast.makeText(InboxActivity.this, "User information is Loading...", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
     }

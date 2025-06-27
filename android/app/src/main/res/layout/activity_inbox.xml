@@ -21,6 +21,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingEnd="8dp">
+
+                </LinearLayout>
+
                 <!-- Top App Bar (Toolbar) -->
                 <androidx.appcompat.widget.Toolbar
                     android:id="@+id/toolbar"
@@ -30,13 +39,33 @@
                     android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
                     app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
 
-                    <androidx.appcompat.widget.SearchView
-                        android:id="@+id/searchView"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="end"
-                        android:iconifiedByDefault="false"
-                        android:queryHint="Search mail..." />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingEnd="8dp">
+
+                        <androidx.appcompat.widget.SearchView
+                            android:id="@+id/searchView"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:queryHint="Search mail..." />
+
+                        <ImageView
+                            android:id="@+id/userAvatarImageView"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:scaleType="centerCrop"
+                            android:contentDescription="@string/user_avatar"
+                            android:src="@drawable/default_avatar"
+                            android:background="@drawable/circle_background"
+                            android:clipToOutline="true"
+                            android:clickable="true"
+                            android:focusable="true"/>
+                    </LinearLayout>
                 </androidx.appcompat.widget.Toolbar>
 
                 <!-- Mail list -->
@@ -47,7 +76,6 @@
                     android:padding="8dp" />
             </LinearLayout>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
 
         <!-- Compose button -->
         <com.google.android.material.button.MaterialButton

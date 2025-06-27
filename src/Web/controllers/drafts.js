@@ -56,8 +56,10 @@ async function getDraftById(req, res) {
 
 async function updateDraft(req, res) {
   await isLoggedIn(req, res, async () => {
-    const success = await mailService.updateDraft(req.user._id, req.params.id, req.body);
-    res.status(success ? 204 : 404).end();
+    const updated = await mailService.updateDraft(req.user._id, req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Draft not found' });
+
+    res.status(200).json(updated);
   });
 }
 
