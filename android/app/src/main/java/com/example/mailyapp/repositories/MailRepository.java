@@ -361,4 +361,20 @@ public class MailRepository {
         return mailDao.searchMails(query);
     }
 
+    public void updateDraft(String draftId, Mail draft, Callback<Mail> callback) {
+        MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
+        mailApi.updateDraft(draftId, draft).enqueue(callback);
+    }
+
+    public void createDraft(Mail draft, Callback<Mail> callback) {
+        MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
+        mailApi.createDraft(draft).enqueue(callback);
+    }
+
+    public void sendDraftAsMail(String draftId, Callback<Mail> callback) {
+        MailApi mailApi = RetrofitClient.getInstance(application).create(MailApi.class);
+        mailApi.sendDraftAsMailWithResponse(draftId).enqueue(callback);
+    }
+
+
 }

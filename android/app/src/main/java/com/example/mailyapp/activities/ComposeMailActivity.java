@@ -1,4 +1,5 @@
 package com.example.mailyapp.activities;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -6,21 +7,16 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.mailyapp.R;
 import com.example.mailyapp.entities.MailEntity;
 import com.example.mailyapp.models.Mail;
-import com.example.mailyapp.repositories.MailRepository;
-import com.example.mailyapp.webservices.MailApi;
-import com.example.mailyapp.webservices.RetrofitClient;
+import com.example.mailyapp.viewmodels.MailViewModel;
 import com.google.android.material.snackbar.Snackbar;
 
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import retrofit2.Call;
@@ -33,6 +29,7 @@ public class ComposeMailActivity extends AppCompatActivity {
     private View rootView;
     private boolean isDraft = false;
     private String draftId = null;
+    private MailViewModel mailViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +37,7 @@ public class ComposeMailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_compose);
 
         rootView = findViewById(android.R.id.content);
+        mailViewModel = new ViewModelProvider(this).get(MailViewModel.class);
 
         ImageButton btnClose = findViewById(R.id.btnClose);
         ImageButton btnSend = findViewById(R.id.btnSend);
@@ -54,8 +52,25 @@ public class ComposeMailActivity extends AppCompatActivity {
         fromEmail.setFocusable(false);
 
         Intent intent = getIntent();
+        boolean isReply = intent.getBooleanExtra("isReply", false);
+        boolean isForward = intent.getBooleanExtra("isForward", false);
         isDraft = intent.getBooleanExtra("isDraft", false);
-        if (isDraft) {
+
+        if (isReply) {
+            String originalSender = intent.getStringExtra("originalSender");
+            String originalSubject = intent.getStringExtra("originalSubject");
+            String originalBody = intent.getStringExtra("originalBody");
+
+            etTo.setText(originalSender != null ? originalSender : "");
+            etSubject.setText(originalSubject != null && originalSubject.startsWith("Re:") ? originalSubject : "Re: " + originalSubject);
+            etBody.setText("\n\n--- Original message ---\n" + (originalBody != null ? originalBody : ""));
+        } else if (isForward) {
+            String originalSubject = intent.getStringExtra("originalSubject");
+            String originalBody = intent.getStringExtra("originalBody");
+
+            etSubject.setText(originalSubject != null && originalSubject.startsWith("Fwd:") ? originalSubject : "Fwd: " + originalSubject);
+            etBody.setText("\n\n--- Forwarded message ---\n" + (originalBody != null ? originalBody : ""));
+        } else if (isDraft) {
             draftId = intent.getStringExtra("draftId");
             etTo.setText(intent.getStringExtra("to"));
             etSubject.setText(intent.getStringExtra("subject"));
@@ -68,11 +83,6 @@ public class ComposeMailActivity extends AppCompatActivity {
             String toInput = etTo.getText().toString().trim();
             String subject = etSubject.getText().toString().trim();
             String body = etBody.getText().toString().trim();
-
-            if (toInput.isEmpty()) {
-                Snackbar.make(rootView, "No recipient found. Please enter a valid email address.", Snackbar.LENGTH_LONG).show();
-                return;
-            }
 
             List<String> recipients = Arrays.stream(toInput.split(","))
                     .map(String::trim)
@@ -93,15 +103,13 @@ public class ComposeMailActivity extends AppCompatActivity {
                         .show();
             } else {
                 if (isDraft && draftId != null) {
-                    MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
                     Mail updated = new Mail();
                     updated.setReceiver(recipients);
                     updated.setSubject(subject.isEmpty() ? "(No subject)" : subject);
                     updated.setContent(body);
                     updated.setType("draft");
 
-                    Call<Mail> updateCall = api.updateDraft(draftId, updated);
-                    updateCall.enqueue(new Callback<Mail>() {
+                    mailViewModel.updateDraft(draftId, updated, new Callback<Mail>() {
                         @Override
                         public void onResponse(Call<Mail> call, Response<Mail> response) {
                             if (response.isSuccessful()) {
@@ -129,10 +137,7 @@ public class ComposeMailActivity extends AppCompatActivity {
         mail.setSubject(subject.isEmpty() ? "(No subject)" : subject);
         mail.setContent(body);
 
-        MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
-        Call<Mail> call = api.sendMail(mail);
-
-        call.enqueue(new Callback<Mail>() {
+        mailViewModel.sendMail(mail, new Callback<Mail>() {
             @Override
             public void onResponse(Call<Mail> call, Response<Mail> response) {
                 if (response.isSuccessful()) {
@@ -149,16 +154,11 @@ public class ComposeMailActivity extends AppCompatActivity {
                             sentMail.isRead(),
                             sentMail.isStarred()
                     );
-                    MailRepository repo = new MailRepository(getApplication());
-                    repo.insert(entity);
-
+                    mailViewModel.insert(entity);
                     Snackbar.make(rootView, "Mail sent successfully", Snackbar.LENGTH_SHORT).show();
                     finish();
-                } else if (response.code() == 404) {
-                    Snackbar.make(rootView, "One or more recipients not found", Snackbar.LENGTH_LONG).show();
                 } else {
                     Snackbar.make(rootView, "Failed to send mail (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
-
                 }
             }
 
@@ -170,10 +170,7 @@ public class ComposeMailActivity extends AppCompatActivity {
     }
 
     private void sendDraftAsMail(String draftId) {
-        MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
-        Call<Mail> call = api.sendDraftAsMailWithResponse(draftId);
-
-        call.enqueue(new Callback<Mail>() {
+        mailViewModel.sendDraftAsMail(draftId, new Callback<Mail>() {
             @Override
             public void onResponse(Call<Mail> call, Response<Mail> response) {
                 if (response.isSuccessful()) {
@@ -192,13 +189,10 @@ public class ComposeMailActivity extends AppCompatActivity {
                             sentMail.isStarred()
                     );
 
-                    MailRepository repo = new MailRepository(getApplication());
-
-                    repo.removeMailFromAllFolders(draftId);
-
-                    repo.insert(entity);
-                    repo.insertFolderRef(sentMail.getId(), "inbox");
-                    repo.insertFolderRef(sentMail.getId(), "sent");
+                    mailViewModel.removeMailFromAllFolders(draftId);
+                    mailViewModel.insert(entity);
+                    mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
+                    mailViewModel.insertFolderRef(sentMail.getId(), "sent");
 
                     Snackbar.make(rootView, "Draft sent successfully", Snackbar.LENGTH_SHORT).show();
                     finish();
@@ -206,6 +200,7 @@ public class ComposeMailActivity extends AppCompatActivity {
                     Snackbar.make(rootView, "Failed to send draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                 }
             }
+
             @Override
             public void onFailure(Call<Mail> call, Throwable t) {
                 Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
@@ -234,16 +229,12 @@ public class ComposeMailActivity extends AppCompatActivity {
         draft.setContent(body);
         draft.setType("draft");
 
-        MailApi api = RetrofitClient.getInstance(this).create(MailApi.class);
-
         if (isDraft && draftId != null) {
-            Call<Mail> call = api.updateDraft(draftId, draft);
-            call.enqueue(new Callback<Mail>() {
+            mailViewModel.updateDraft(draftId, draft, new Callback<Mail>() {
                 @Override
                 public void onResponse(Call<Mail> call, Response<Mail> response) {
-                    if (response.isSuccessful() && response.body() != null) {
+                    if (response.isSuccessful()) {
                         Mail updated = response.body();
-
                         MailEntity entity = new MailEntity(
                                 updated.getId(),
                                 updated.getSender(),
@@ -256,16 +247,14 @@ public class ComposeMailActivity extends AppCompatActivity {
                                 updated.isRead(),
                                 updated.isStarred()
                         );
-
-                        MailRepository repo = new MailRepository(getApplication());
-                        repo.insert(entity);
-
+                        mailViewModel.insert(entity);
                         Snackbar.make(rootView, "Draft updated", Snackbar.LENGTH_SHORT).show();
-                        finish();
                     } else {
                         Snackbar.make(rootView, "Failed to update draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                     }
+                    finish();
                 }
+
                 @Override
                 public void onFailure(Call<Mail> call, Throwable t) {
                     Snackbar.make(rootView, "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
@@ -273,13 +262,12 @@ public class ComposeMailActivity extends AppCompatActivity {
                 }
             });
         } else {
-            Call<Mail> call = api.createDraft(draft);
-            call.enqueue(new Callback<Mail>() {
+            mailViewModel.createDraft(draft, new Callback<Mail>() {
                 @Override
                 public void onResponse(Call<Mail> call, Response<Mail> response) {
-                    if (response.isSuccessful() && response.body() != null) {
+                    if (response.isSuccessful()) {
                         Mail savedDraft = response.body();
-                        draftId = savedDraft.getId(); // עדכון ה־draftId האמיתי
+                        draftId = savedDraft.getId();
                         isDraft = true;
 
                         MailEntity entity = new MailEntity(
@@ -294,9 +282,8 @@ public class ComposeMailActivity extends AppCompatActivity {
                                 savedDraft.isRead(),
                                 savedDraft.isStarred()
                         );
-                        MailRepository repo = new MailRepository(getApplication());
-                        repo.insert(entity);
-                        repo.insertFolderRef(savedDraft.getId(), "drafts");
+                        mailViewModel.insert(entity);
+                        mailViewModel.insertFolderRef(savedDraft.getId(), "drafts");
 
                         Snackbar.make(rootView, "Draft saved", Snackbar.LENGTH_SHORT).show();
                     } else {
@@ -304,7 +291,6 @@ public class ComposeMailActivity extends AppCompatActivity {
                     }
                     finish();
                 }
-
 
                 @Override
                 public void onFailure(Call<Mail> call, Throwable t) {
@@ -315,5 +301,3 @@ public class ComposeMailActivity extends AppCompatActivity {
         }
     }
 }
-
-
