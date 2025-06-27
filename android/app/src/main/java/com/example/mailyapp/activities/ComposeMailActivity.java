@@ -147,11 +147,15 @@ public class ComposeMailActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     Mail sentMail = response.body();
                     mailViewModel.insert(toEntity(sentMail));
-                    mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
-                    mailViewModel.insertFolderRef(sentMail.getId(), "sent");
 
+                    mailViewModel.fetchFolder("sent", 1);
+                    if ("spam".equalsIgnoreCase(sentMail.getType())) {
+                        mailViewModel.fetchFolder("spam", 1);
+                    } else {
+                        mailViewModel.fetchFolder("inbox", 1);
+                    }
+                  
                     Snackbar.make(rootView, "Mail sent successfully", Snackbar.LENGTH_SHORT).show();
-
                     goBackToInboxActivity();
                 } else {
                     Snackbar.make(rootView, "Failed to send mail (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
@@ -173,12 +177,16 @@ public class ComposeMailActivity extends AppCompatActivity {
                     Mail sentMail = response.body();
                     mailViewModel.insert(toEntity(sentMail));
                     mailViewModel.removeMailFromAllFolders(draftId);
-                    mailViewModel.insertFolderRef(sentMail.getId(), "inbox");
-                    mailViewModel.insertFolderRef(sentMail.getId(), "sent");
-
                     Snackbar.make(rootView, "Draft sent successfully", Snackbar.LENGTH_SHORT).show();
-
+                  
+                    mailViewModel.fetchFolder("sent", 1);
+                    if ("spam".equalsIgnoreCase(sentMail.getType())) {
+                        mailViewModel.fetchFolder("spam", 1);
+                    } else {
+                        mailViewModel.fetchFolder("inbox", 1);
+                    }
                     goBackToInboxActivity();
+
                 } else {
                     Snackbar.make(rootView, "Failed to send draft (" + response.code() + ")", Snackbar.LENGTH_LONG).show();
                 }

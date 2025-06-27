@@ -223,8 +223,8 @@ async function restoreMailFromTrash(userId, mailId) {
   const newType = isSender && isReceiver
     ? 'mail'
     : isSender
-    ? 'sent'
-    : 'inbox';
+      ? 'sent'
+      : 'inbox';
 
   // Update central Mail document type
   await Mail.updateOne(
@@ -306,7 +306,12 @@ async function deleteSpamMail(userId, mailId) {
     { _id: userId },
     { $pull: { 'mails.spam': { 'mail._id': new mongoose.Types.ObjectId(mailId) } } }
   );
-  return result.modifiedCount > 0;
+  if (result.modifiedCount > 0) {
+    await deleteMailDocument(mailId);
+    return true;
+  }
+  return false;
+
 }
 
 async function markAsSpam(userId, mailId, blacklistUpdateFn) {
@@ -324,6 +329,12 @@ async function markAsSpam(userId, mailId, blacklistUpdateFn) {
 
   const { mail, isRead, isStarred } = found;
   const mailObjectId = new mongoose.Types.ObjectId(mailId);
+
+  await Mail.updateOne(
+    { _id: mailObjectId },
+    { $set: { type: 'spam' } }
+  );
+  mail.type = 'spam';
 
   // Remove label references
   const originalLabels = [...(mail.labels || [])];
@@ -343,7 +354,6 @@ async function markAsSpam(userId, mailId, blacklistUpdateFn) {
   const updates = {
     $pull: {
       'mails.inbox': { 'mail._id': mailObjectId },
-      'mails.sent': { 'mail._id': mailObjectId }
     },
     $addToSet: {
       'mails.spam': { mail, isRead, isStarred }
@@ -368,6 +378,14 @@ async function markAsNotSpam(userId, mailId, blacklistRemoveFn) {
 
   const isSender = mail.sender === user.email;
   const isReceiver = mail.receiver.includes(user.email);
+
+  mail.type = isSender && isReceiver ? 'mail' : isSender ? 'sent' : 'inbox';
+
+  await Mail.updateOne(
+    { _id: mailObjectId },
+    { $set: { type: mail.type } }
+  );
+  
   const entry = { mail, isRead, isStarred };
 
   const updates = { $pull: { 'mails.spam': { 'mail._id': mailObjectId } } };
