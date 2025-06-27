@@ -467,6 +467,108 @@ public class MailRepository {
                 .getString("user_email", "");
     }
 
+    public void markAsSpam(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        executorService.execute(() -> {
+            MailEntity mail = mailDao.getNow(mailId);
+            if (mail != null) {
+                mail.setType("spam");
+                mailDao.removeMailFromAllFolders(mailId);
+                mailDao.insert(mail);
+                mailDao.insertFolderRef(new MailFolderCrossRef(mailId, "spam"));
+            }
 
+            MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+            api.markAsSpam(mailId).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        onSuccess.run();
+                    } else {
+                        onFailure.accept(new Exception("Server rejected spam marking: " + response.code()));
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    onFailure.accept(t);
+                }
+            });
+        });
+    }
+
+    public void markAsNotSpam(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+
+        api.markAsNotSpam(mailId).enqueue(new Callback<Mail>() {
+            @Override
+            public void onResponse(Call<Mail> call, Response<Mail> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    executorService.execute(() -> {
+                        Mail mail = response.body();
+                        String userEmail = getUserEmail();
+
+                        List<MailFolderCrossRef> refs = new ArrayList<>();
+                        refs.add(new MailFolderCrossRef(mail.getId(), "inbox"));
+
+                        if (userEmail.equalsIgnoreCase(mail.getSender())
+                                && mail.getReceiver() != null
+                                && mail.getReceiver().contains(userEmail)) {
+                            refs.add(new MailFolderCrossRef(mail.getId(), "sent"));
+                        }
+
+                        MailEntity entity = new MailEntity(
+                                mail.getId(),
+                                mail.getSender(),
+                                mail.getReceiver(),
+                                mail.getSubject(),
+                                mail.getContent(),
+                                mail.getDate(),
+                                mail.getLabels(),
+                                mail.getType(),
+                                mail.isRead(),
+                                mail.isStarred()
+                        );
+
+                        mailDao.removeMailFromAllFolders(mail.getId());
+                        mailDao.insert(entity);
+                        mailDao.insertFolderRefs(refs);
+
+                        onSuccess.run();
+                    });
+                } else {
+                    onFailure.accept(new Exception("Failed to restore from spam: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Mail> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
+
+    public void deleteSpamMail(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        MailApi api = RetrofitClient.getInstance(application).create(MailApi.class);
+
+        api.deleteSpamMail(mailId).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    executorService.execute(() -> {
+                        mailDao.removeMailFromAllFolders(mailId);
+                        mailDao.deleteById(mailId);
+                        onSuccess.run();
+                    });
+                } else {
+                    onFailure.accept(new Exception("Failed with code: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                onFailure.accept(t);
+            }
+        });
+    }
 
 }

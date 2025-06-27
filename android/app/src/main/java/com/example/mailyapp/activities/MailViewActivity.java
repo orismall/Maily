@@ -71,6 +71,7 @@ public class MailViewActivity extends AppCompatActivity {
         // Load mail data
         mail = (Mail) getIntent().getSerializableExtra("mail");
         boolean isTrash = mail != null && "trash".equalsIgnoreCase(mail.getType());
+        boolean isSpam = mail != null && "spam".equalsIgnoreCase(mail.getType());
 
         if (mail != null) {
             subjectTextView.setText(mail.getSubject());
@@ -122,14 +123,55 @@ public class MailViewActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cannot spam a trashed mail.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Handle spam ------------------ //
+            if (isSpam) {
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Mark as Not Spam")
+                        .setMessage("Are you sure you want to mark this mail as not spam?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            mailViewModel.markAsNotSpam(mail.getId(),
+                                    () -> runOnUiThread(() -> {
+                                        mailViewModel.removeMailFromAllFolders(mail.getId());
+                                        mailViewModel.fetchFolder("inbox", 1);
+                                        mailViewModel.fetchFolder("sent", 1);
+                                        Toast.makeText(this, "Mail restored from spam", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }),
+                                    error -> runOnUiThread(() ->
+                                            Toast.makeText(this, "Failed to restore", Toast.LENGTH_SHORT).show())
+                            );
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            } else {
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Mark as Spam")
+                        .setMessage("Are you sure you want to mark this mail as spam?")
+                        .setPositiveButton("Mark as Spam", (dialog, which) -> {
+                            mailViewModel.markAsSpam(mail.getId(),
+                                    () -> runOnUiThread(() -> {
+                                        mailViewModel.removeMailFromAllFolders(mail.getId());
+                                        mailViewModel.fetchFolder("spam", 1);
+                                        Toast.makeText(this, "Mail marked as spam", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }),
+                                    error -> runOnUiThread(() ->
+                                            Toast.makeText(this, "Failed to mark as spam", Toast.LENGTH_SHORT).show())
+                            );
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
         });
 
         starButton.setOnClickListener(v -> {
             if (mail == null) return;
 
-            if ("trash".equalsIgnoreCase(mail.getType())) {
+            if (isTrash) {
                 Toast.makeText(this, "Cannot star a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (isSpam) {
+                Toast.makeText(this, "Cannot star a spam mail.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -147,6 +189,10 @@ public class MailViewActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cannot reply to a trashed mail.", Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (isSpam) {
+                Toast.makeText(this, "Cannot reply to a spam mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
             intent.putExtra("isReply", true);
             intent.putExtra("originalSender", mail.getSender());
@@ -159,6 +205,10 @@ public class MailViewActivity extends AppCompatActivity {
             if (mail == null) return;
             if (isTrash) {
                 Toast.makeText(this, "Cannot reply to a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (isSpam) {
+                Toast.makeText(this, "Cannot reply to a spam mail.", Toast.LENGTH_SHORT).show();
                 return;
             }
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
@@ -174,6 +224,10 @@ public class MailViewActivity extends AppCompatActivity {
             if (mail == null) return;
             if (isTrash) {
                 Toast.makeText(this, "Cannot forward a trashed mail.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (isSpam) {
+                Toast.makeText(this, "Cannot forward a spam mail.", Toast.LENGTH_SHORT).show();
                 return;
             }
             Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
@@ -221,6 +275,10 @@ public class MailViewActivity extends AppCompatActivity {
                     Toast.makeText(this, "Cannot reply to a trashed mail.", Toast.LENGTH_SHORT).show();
                     return;
                 }
+                if (isSpam) {
+                    Toast.makeText(this, "Cannot forward a spam mail.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
                 intent.putExtra("isReply", true);
                 intent.putExtra("originalSender", mail.getSender());
@@ -237,6 +295,10 @@ public class MailViewActivity extends AppCompatActivity {
                     Toast.makeText(this, "Cannot forward a trashed mail.", Toast.LENGTH_SHORT).show();
                     return;
                 }
+                if (isSpam) {
+                    Toast.makeText(this, "Cannot forward a spam mail.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 Intent intent = new Intent(MailViewActivity.this, ComposeMailActivity.class);
                 intent.putExtra("isForward", true);
                 intent.putExtra("originalSubject", mail.getSubject());
@@ -250,8 +312,9 @@ public class MailViewActivity extends AppCompatActivity {
         });
 
         trashButton.setOnClickListener(v -> {
+            if (mail == null) return;
             if ("trash".equalsIgnoreCase(currentMail.getType())) {
-                // 🗑 Permanently delete
+                // Permanently delete from trash
                 new androidx.appcompat.app.AlertDialog.Builder(this)
                         .setTitle("Delete Permanently")
                         .setMessage("Are you sure you want to permanently delete this mail?")
@@ -268,8 +331,26 @@ public class MailViewActivity extends AppCompatActivity {
                         })
                         .setNegativeButton("Cancel", null)
                         .show();
+            } else if ("spam".equalsIgnoreCase(mail.getType())) {
+                // Permanently delete from spam
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Permanently delete Spam Mail")
+                        .setMessage("Are you sure you want to permanently delete this spam mail?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            mailViewModel.deleteSpamMail(mail.getId(),
+                                    () -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Spam mail permanently deleted", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }),
+                                    error -> runOnUiThread(() -> {
+                                        Toast.makeText(this, "Failed to delete spam mail", Toast.LENGTH_SHORT).show();
+                                    })
+                            );
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
             } else {
-                // 🗃 Move to trash
+                // Move to trash
                 new androidx.appcompat.app.AlertDialog.Builder(this)
                         .setTitle("Move to Trash")
                         .setMessage("Are you sure you want to move this mail to trash?")
@@ -294,6 +375,10 @@ public class MailViewActivity extends AppCompatActivity {
     private void showLabelPopup() {
         if ("trash".equalsIgnoreCase(currentMail.getType())) {
             Toast.makeText(this, "Cannot label a trashed mail.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if ("spam".equalsIgnoreCase(currentMail.getType())) {
+            Toast.makeText(this, "Cannot label a spam mail.", Toast.LENGTH_SHORT).show();
             return;
         }
         View popupView = getLayoutInflater().inflate(R.layout.mail_more_menu, null);

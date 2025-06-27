@@ -133,4 +133,18 @@ public class MailViewModel extends AndroidViewModel {
     public void restoreFromTrash(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
         repository.restoreFromTrash(mailId, onSuccess, onFailure);
     }
+
+    public void markAsSpam(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.markAsSpam(mailId, onSuccess, onFailure);
+    }
+
+    public void markAsNotSpam(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.markAsNotSpam(mailId, onSuccess, onFailure);
+    }
+
+    public void deleteSpamMail(String mailId, Runnable onSuccess, Consumer<Throwable> onFailure) {
+        repository.deleteSpamMail(mailId, onSuccess, onFailure);
+    }
+
+
 }
