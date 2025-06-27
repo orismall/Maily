@@ -393,7 +393,7 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
                             .setPositiveButton("X", null)
                             .show();
                 } else {
-                    Toast.makeText(InboxActivity.this, "No user information available", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(InboxActivity.this, "User information is Loading...", Toast.LENGTH_SHORT).show();
                 }
             });
         });
