@@ -82,8 +82,6 @@ The `wiki/` folder includes:
           - package.json 
       - Tests
           - test.cpp
-  - Screenshots
-      - *.png
   - data
       - Blacklist.txt
   - web-client
@@ -101,6 +99,12 @@ The `wiki/` folder includes:
     - .env
     - package-lock.json
     - package.json 
+  - wiki
+    - Screenshots
+      - *.png
+    - 0.Build-And-Setup.md
+    - 1.Android-App-Usage.md
+    - 2.Web-App-Usage.md
   - .env
   - .gitignore
   - CMakeLists.txt
