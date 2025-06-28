@@ -1,0 +1,31 @@
+## How to Build & Run
+
+### Requirements
+- Docker installed on your machine
+
+### Build full application with Docker-compose:
+The full app can be built using a single command:  
+```docker-compose up --build```  
+
+By default, Docker Compose uses environment variables from the .env file located in the same directory.  
+This file defines the following settings:  
+
+**SERVER_PORT** = 12345  
+**BITS_ARRAY_SIZE** = 16  
+**HASH_FUNCS** = "1 2"  
+**WEB_PORT** = 5001  
+**WEB_CLIENT_PORT** = 3000  
+
+You can override any of these variables at runtime using the command line:
+```
+WEB_CLIENT_PORT=<Web_Client_Port> \
+WEB_PORT=<Web_Port> \
+SERVER_PORT=<Server_Port> \
+BITS_ARRAY_SIZE=<Bits_Array_Size> \
+HASH_FUNCS="<Hash_Functions>" \
+docker-compose up --build
+```
+Just make sure you enter valid arguments.       
+- Note: If you change the WEB_PORT  , you must also update the value in the `.env` file located in the `web-client` folder, and the `BaseUrl` String located in the `Strings.xml` file.
+
+To stop the app and exit, press `Ctrl + C`.
