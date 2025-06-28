@@ -4,6 +4,7 @@ import static com.example.mailyapp.MyApplication.context;
 
 import android.content.Context;
 
+import com.example.mailyapp.R;
 import com.example.mailyapp.models.Label;
 import com.example.mailyapp.models.LabelDeserializer;
 import com.example.mailyapp.models.Mail;
@@ -34,7 +35,7 @@ public class RetrofitClient {
                     .create();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl("http://10.0.2.2:5001/api/")
+                    .baseUrl(context.getString(R.string.BaseUrl))
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .client(client)
                     .build();

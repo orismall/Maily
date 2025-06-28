@@ -1,6 +1,6 @@
 
-### Run the app
- Once the App is running, open your browser and navigate to:  
+## Run the web app
+ Once the Docker-compose is running, open your browser and navigate to:  
  ` http://localhost:<WEB_CLIENT_PORT>`  
 
  By default, go to : `http://localhost:3000`
@@ -10,10 +10,7 @@ To simulate multiple users, open the application in incognito browsing windows.
 ---
 
 ## App usage screenshots and explanations
-Below are screenshots and explanations demonstrating key features and usage flows of the Gmail-like web application.  
-
-### Build app  
-![Build & Run](../Screenshots/1.png) 
+Below are screenshots and explanations demonstrating key features and usage flows of the Gmail-like web application.   
 
 ### Open app on browser
 ![run App on browser](../Screenshots/2.png)
