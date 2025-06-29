@@ -221,7 +221,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         // Handle menu item clicks
         // Set up manual click listeners for nav items
         findViewById(R.id.nav_inbox).setOnClickListener(v -> {
-            // TODO: handle inbox selection
             LinearLayout navInbox = findViewById(R.id.nav_inbox);
             currentFolder = "inbox";
             markSelectedItem(navInbox);
@@ -230,7 +229,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
         findViewById(R.id.nav_starred).setOnClickListener(v -> {
-            // TODO: handle starred
             LinearLayout navStarred = findViewById(R.id.nav_starred);
             currentFolder = "starred";
             markSelectedItem(navStarred);
@@ -239,7 +237,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
         findViewById(R.id.nav_sent).setOnClickListener(v -> {
-            // TODO: handle sent
             LinearLayout navSent = findViewById(R.id.nav_sent);
             currentFolder = "sent";
             markSelectedItem(navSent);
@@ -248,7 +245,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
         findViewById(R.id.nav_drafts).setOnClickListener(v -> {
-            // TODO: handle drafts
             LinearLayout navDrafts = findViewById(R.id.nav_drafts);
             currentFolder = "drafts";
             markSelectedItem(navDrafts);
@@ -257,7 +253,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
         findViewById(R.id.nav_spam).setOnClickListener(v -> {
-            // TODO: handle spam
             LinearLayout navSpam = findViewById(R.id.nav_spam);
             currentFolder = "spam";
             markSelectedItem(navSpam);
@@ -266,7 +261,6 @@ public class InboxActivity extends AppCompatActivity implements MailAdapter.OnMa
         });
 
         findViewById(R.id.nav_trash).setOnClickListener(v -> {
-            // TODO: handle trash
             LinearLayout navTrash = findViewById(R.id.nav_trash);
             currentFolder = "trash";
             markSelectedItem(navTrash);
